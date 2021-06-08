@@ -378,43 +378,36 @@ compiler-annotated output. Does not return a line number."
       (idris2-show-info (format "%s" result) formatting)))
 
 (defun idris2-jump-to-location (loc is-same-window)
-  "jumps to specified location"
+  "Jumps to specified location."
   (pcase-let* ((`(,name ,file ,line ,col) loc)
 	       (full-path (idris2-find-full-path file)))
+    (ignore name)
     (xref-push-marker-stack) ;; this pushes a "tag" mark. haskell mode
     ;; also does this and it seems appropriate, allows the user to pop
     ;; the tag and go back to the previous point. (pop-tag-mark
     ;; default Ctl-t)
     (if full-path
 	(idris2-goto-source-location-full full-path (+ 1 line) col is-same-window)
-      (user-error "Source not found for %s" file)
-      )
-    )
-  )
+      (user-error "Source not found for %s" file))))
 
 (defun idris2-show-jump-choices (locs is-same-window)
   (unless (idris2-info-buffer-visible-p)
     (idris2-info-show)
-    (message "Press q to close the Idris2 info buffer."))
+    (message "Press 'q' to close the Idris2 info buffer."))
   (with-current-buffer (idris2-info-buffer)
     (setq buffer-read-only t)
     (let ((inhibit-read-only t))
       (erase-buffer)
       (dolist (loc (reverse locs))
 	(pcase-let* ((`(,name ,file ,line ,col) loc)
-		     (fullpath (idris2-find-full-path file))
-		     )
+		     (fullpath (idris2-find-full-path file)))
+          (ignore line col)
 	  (if (file-exists-p fullpath)
 	      (insert-button name 'follow-link t 'button loc
 			     'action #'(lambda (_) (idris2-info-quit) (idris2-jump-to-location loc is-same-window)))
 	    (insert (format "%s (not found)" name)))
 	  (insert-char ?\n)
-	  (goto-char (point-min))
-	  )
-	)
-      )
-    )
-  )
+	  (goto-char (point-min)))))))
 
 (defun idris2-jump-to-def-name (name &optional is-same-window)
   (let ((res (car (idris2-eval (cons :name-at (cons name ()))))))
@@ -479,22 +472,24 @@ compiler-annotated output. Does not return a line number."
    :item ""
    :highlighting nil
    :collapsed-p collapse
-   :button (list name-str 'action #'(lambda (button)
-				      (let ((loc (idris2-extract-location-from-name name-str)))
-					(if loc
-					    (idris2-jump-to-location loc nil)
-					  (idris2-jump-to-def-name name-str nil)))))
+   :button (list name-str
+                 'action
+                 #'(lambda (button)
+                     (ignore button)
+		     (let ((loc (idris2-extract-location-from-name name-str)))
+		       (if loc
+			   (idris2-jump-to-location loc nil)
+			 (idris2-jump-to-def-name name-str nil)))))
    :kids
       #'(lambda () (mapcar #'(lambda (child)
 			       (pcase-let* ((`(,cname ,ctimes-called) child)
-					    (children-of-child (car (cdr (caar (idris2-eval `(:who-calls ,cname))))))
-					    )
+					    (children-of-child (car (cdr (caar (idris2-eval `(:who-calls ,cname)))))))
+                                 (ignore ctimes-called)
 				 (idris2-who-calls-name-helper t cname children-of-child)
 		    ;; (idris2-who-calls-name-helper t (format "%s (Called %d times)" cname ctimes-called) children-of-child))
 		   ))
 			   children))
-   :preserve-properties '(idris2-tt-tree))
-  )
+   :preserve-properties '(idris2-tt-tree)))
 
 (defun idris2-who-calls-name (name)
   "Show the callers of NAME in a tree."
@@ -507,10 +502,10 @@ compiler-annotated output. Does not return a line number."
 
 (defun idris2-who-calls-name-at-point (thing)
   (interactive "P")
+  (ignore thing)
   (xref-push-marker-stack)
   (let ((name-loc (idris2-thing-at-point t)))
-    (idris2-who-calls-name (car name-loc)))
-  )
+    (idris2-who-calls-name (car name-loc))))
 
 (defun idris2-name-calls-who (name)
   "Show the callees of NAME in a tree."
@@ -544,7 +539,7 @@ compiler-annotated output. Does not return a line number."
                         "Browse Namespace"))
 
 (defun idris2-caller-tree (caller cmd)
-  "Display a tree from an IDE caller list, lazily retrieving a few levels at a time"
+  "Display a tree from an IDE caller list, lazily retrieving a few levels at a time."
   (pcase caller
     (`((,name ,highlight) ,children)
      (make-idris2-tree
@@ -553,13 +548,12 @@ compiler-annotated output. Does not return a line number."
       :collapsed-p t
       :kids (lambda ()
               (cl-mapcan #'(lambda (child)
-                             (let* (
-				    (cmd-to-run (list cmd (car child))
-				    (child-name (car (idris2-eval `(,cmd ,(car child))))))
+                             (let* ((cmd-to-run (list cmd (car child)))
+                                    (child-name (car (idris2-eval `(,cmd-to-run ,(car child))))))
                                (if child-name
                                    (list (idris2-caller-tree child-name cmd))
-                                 nil)))
-                         children)))
+                                 nil))
+                             children)))
       :preserve-properties '(idris2-tt-tree)))
     (_ (error "failed to make tree from %s" caller))))
 
@@ -665,9 +659,11 @@ KILLFLAG is set if N was explicitly specified."
   (idris2-info-for-name :interpret (concat ":search " what)))
 
 (defun idris2-docs-at-point (thing)
-  "Display the internal documentation for the name at point, considered as a global variable"
+  "Display the internal documentation for the name at point,
+considered as a global variable."
   (interactive)
-  (message "Not implemented yet"))
+  (ignore thing)
+  (message "Not implemented yet."))
 
 (defun idris2-eldoc-lookup ()
   "Support for showing type signatures in the modeline when there's a running Idris2"
@@ -837,8 +833,8 @@ KILLFLAG is set if N was explicitly specified."
 command to prompt for hints and recursion depth, while a numeric
 prefix argument sets the recursion depth directly."
   (interactive "P")
-  (let
-      ((what (idris2-thing-at-point)))
+  (ignore arg)
+  (let ((what (idris2-thing-at-point)))
     (when (car what)
       (save-excursion (idris2-load-file-sync))
       (let ((result (car (idris2-eval `(:proof-search ,(cadr what) ,(car what))))))
@@ -848,15 +844,13 @@ prefix argument sets the recursion depth directly."
 	    (let ((start (progn (search-backward "?") (point)))
 		  (end (progn (forward-char) (search-forward-regexp "[^a-zA-Z0-9_']") (backward-char) (point))))
 	      (delete-region start end))
-	    (insert result)))))
-    )
-  )
+	    (insert result)))))))
 
 (defun idris2-refine (name)
   "Refine by some NAME, without recursive proof search."
   (interactive)
-  (message "No refine in Idris2 yet!")
-)
+  (ignore name)
+  (message "No refine in Idris2 yet!"))
 
 (defun idris2-identifier-backwards-from-point ()
   (let (identifier-start
@@ -1259,6 +1253,7 @@ of the term to replace."
   (let ((command (format ":consolewidth %s"
                          (or idris2-pretty-printer-width
                              "infinite"))))
+    (ignore command)
     (when (and idris2-process
                (not idris2-prover-currently-proving))
       ;; (idris2-eval `(:interpret ,command) t) TIMHACK
