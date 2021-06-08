@@ -38,14 +38,11 @@ OBJS =	idris2-commands.elc		\
 
 build: getdeps $(OBJS)
 
-test: getdeps build
-	$(BATCHEMACS) -L . -l ert -l idris2-tests.el -f ert-run-tests-batch-and-exit
 
 clean:
 	-rm -f $(OBJS)
-	-rm -f test-data/*ibc
 
 getdeps:
 	$(BATCHEMACS) -eval '(progn (package-refresh-contents) (unless (package-installed-p (quote prop-menu)) (package-install (quote prop-menu))))'
 
-.PHONY: clean build test getdeps
+.PHONY: clean build getdeps

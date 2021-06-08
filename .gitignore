@@ -1,5 +1,8 @@
-*~
-*.elc
+# ignore files
+
 documentation.aux
 documentation.log
 documentation.pdf
+
+*.elc
+*~

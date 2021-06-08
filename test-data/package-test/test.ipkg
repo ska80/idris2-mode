@@ -1,3 +1,0 @@
-package test
-
-pkgs = recursion_schemes, idris-free
