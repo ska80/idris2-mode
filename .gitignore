@@ -1,9 +1,9 @@
 # ignore files
 
-/documentation.aux
-/documentation.log
-/documentation.pdf
-/auto/
+/docs/*.aux
+/docs/*.log
+/docs/*.pdf
+/docs/auto/
 
 *.elc
 *~

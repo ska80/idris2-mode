@@ -54,8 +54,14 @@ getdeps:
 	         (unless (package-installed-p (quote prop-menu)) \
 	           (package-install (quote prop-menu))))'
 
+.PHONY: docs
+
+docs: docs/documentation.tex
+	-@( cd docs/ && xelatex documentation.tex )
+
 
 .PHONY: clean
 
 clean:
 	-$(RM) $(OBJS)
+	-$(RM) -r docs/auto docs/*.aux docs/*.log docs/*.pdf
