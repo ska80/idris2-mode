@@ -3,7 +3,7 @@
 /documentation.aux
 /documentation.log
 /documentation.pdf
-/auto
+/auto/
 
 *.elc
 *~
