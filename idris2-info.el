@@ -25,6 +25,7 @@
 ;; that buffer to a minimum.
 
 ;;; Code:
+
 (require 'prop-menu)
 (require 'idris2-core)
 (require 'idris2-common-utils)
@@ -42,7 +43,8 @@ otherwise, and whose third element is the future.")
 
 (defun idris2-info-history-insert (contents)
   "Insert CONTENTS into the Idris2 info history as the current node.
-Following the behavior of Emacs help buffers, the future is deleted."
+Following the behavior of Emacs help buffers, the future is
+deleted."
   (pcase-let ((`(,past ,present ,_future) idris2-info-history))
     (setq idris2-info-history
           (if present
@@ -66,17 +68,16 @@ Following the behavior of Emacs help buffers, the future is deleted."
           (`(,past ,present ()) (list past present ())))))
 
 (defvar idris2-info-buffer-name (idris2-buffer-name :info)
-  "The name of the buffer containing Idris2 help information")
+  "The name of the buffer containing Idris2 help information.")
 
 (defvar idris2-buffer-to-return-to-from-info-buffer
   "The buffer that should be returned to when the info buffer is closed.")
 
-
 (defvar idris2-info-mode-map
   (let ((map (make-keymap)))
-    (suppress-keymap map) ; remove the self-inserting char commands
+    (suppress-keymap map)               ; remove the self-inserting char commands
     (define-key map (kbd "q") 'idris2-info-quit)
-    ;;; Allow buttons to be clicked with the left mouse button in info buffers
+    ;; allow buttons to be clicked with the left mouse button in info buffers
     (define-key map [follow-link] 'mouse-face)
     (cl-loop for keyer
              in '(idris2-define-docs-keys
@@ -108,21 +109,23 @@ Ensure that the buffer is in `idris2-info-mode'."
     buffer))
 
 (defun idris2-info-quit ()
-  "Exits the info window. Tries to go back to the previous window and buffer before it was opened."
+  "Exits the info window. Tries to go back to the previous window
+and buffer before it was opened."
   (interactive)
   (idris2-kill-buffer idris2-info-buffer-name)
-  (if (and idris2-buffer-to-return-to-from-info-buffer (buffer-live-p idris2-buffer-to-return-to-from-info-buffer))
+  (if (and idris2-buffer-to-return-to-from-info-buffer
+           (buffer-live-p idris2-buffer-to-return-to-from-info-buffer))
       (pop-to-buffer idris2-buffer-to-return-to-from-info-buffer `(display-buffer-reuse-window))
-    ()
-    )
-  (setq idris2-buffer-to-return-to-from-info-buffer nil)
-  )
+    ())
+  (setq idris2-buffer-to-return-to-from-info-buffer nil))
 
 (defun idris2-info-buffer-visible-p ()
-  (if (get-buffer-window idris2-info-buffer-name 'visible) t nil))
+  (if (get-buffer-window idris2-info-buffer-name 'visible)
+      t nil))
 
 (defun idris2-info-show ()
-  "Show the Idris2 info buffer. Updates idris2-buffer-to-return-to-from-info-buffer to current buffer"
+  "Show the Idris2 info buffer. Updates
+IDRIS2-BUFFER-TO-RETURN-TO-FROM-INFO-BUFFER to current buffer."
   (interactive)
   (setq idris2-buffer-to-return-to-from-info-buffer (current-buffer))
   (with-current-buffer (idris2-info-buffer)
@@ -134,10 +137,18 @@ Ensure that the buffer is in `idris2-info-mode'."
         (insert present)
         (insert "\n\n"))
       (when past
-        (insert-button "[back]" 'action #'(lambda (_) (interactive) (idris2-info-history-back) (idris2-info-show))))
+        (insert-button "[back]" 'action
+                       #'(lambda (_)
+                           (interactive)
+                           (idris2-info-history-back)
+                           (idris2-info-show))))
       (when (and past future) (insert "\t"))
       (when future
-        (insert-button "[forward]" 'action #'(lambda (_) (interactive) (idris2-info-history-forward) (idris2-info-show))))
+        (insert-button "[forward]" 'action
+                       #'(lambda (_)
+                           (interactive)
+                           (idris2-info-history-forward)
+                           (idris2-info-show))))
       (when (or past future) (newline))
       (goto-char (point-min))))
   (unless (idris2-info-buffer-visible-p)
@@ -146,7 +157,8 @@ Ensure that the buffer is in `idris2-info-mode'."
   (pop-to-buffer idris2-buffer-to-return-to-from-info-buffer))
 
 (defmacro with-idris2-info-buffer (&rest cmds)
-  "Execute `CMDS' in a fresh Idris2 info buffer, then display it to the user."
+  "Execute `CMDS' in a fresh Idris2 info buffer, then display it
+to the user."
   (declare (indent defun))
   (let ((str-info (cl-gensym "STR-INFO")))
     `(let ((,str-info (with-temp-buffer
@@ -155,15 +167,14 @@ Ensure that the buffer is in `idris2-info-mode'."
        (idris2-info-history-insert ,str-info)
        (idris2-info-show))))
 
-
 (defun idris2-show-info (info-string &optional spans)
-  "Show INFO-STRING in the Idris2 info buffer, obliterating its previous contents."
+  "Show INFO-STRING in the Idris2 info buffer, obliterating its
+previous contents."
   (with-idris2-info-buffer
     (idris2-propertize-spans (idris2-repl-semantic-text-props spans)
       (insert info-string)))
   info-string)
 
-
-
 (provide 'idris2-info)
+
 ;;; idris2-info.el ends here

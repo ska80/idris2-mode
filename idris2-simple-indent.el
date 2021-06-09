@@ -70,20 +70,23 @@
 (defconst idris2-simple-indent-version "0.1"
   "`idris2-simple-indent' version number.")
 (defun idris2-simple-indent-version ()
-  "Echo the current version of `idris2-simple-indent' in the minibuffer."
+  "Echo the current version of `idris2-simple-indent' in the
+minibuffer."
   (interactive)
   (message "Using idris2-simple-indent version %s"
            idris2-simple-indent-version))
 
 (defun idris2-simple-indent-current-indentation ()
-  "Return the indentation of the current line, taking into account literate Idris2 syntax"
+  "Return the indentation of the current line, taking into
+account literate Idris2 syntax."
   (save-excursion
     (move-to-column 0)
     (looking-at (if (idris2-lidr-p) ">\\s-*" "\\s-*"))
     (length (match-string 0))))
 
 (defun idris2-simple-indent-indent-line-to (column)
-  "Just like `indent-line-to`, but ignoring the leading > for literate Idris2"
+  "Just like `indent-line-to`, but ignoring the leading > for
+literate Idris2."
   (if (idris2-lidr-p)
       (if (save-excursion (move-to-column 0) (looking-at ">")) ;; lidr code line - look out for >
           (progn
@@ -110,11 +113,12 @@
 ;; Partly stolen from `indent-relative' in indent.el:
 (defun idris2-simple-indent ()
   "Space out to under next visible indent point.
-Indent points are positions of non-whitespace following whitespace in
-lines preceeding point. A position is visible if it is to the left of
-the first non-whitespace of every nonblank line between the position and
-the current line. If there is no visible indent point beyond the current
-column, `tab-to-tab-stop' is done instead."
+Indent points are positions of non-whitespace following
+whitespace in lines preceeding point. A position is visible if it
+is to the left of the first non-whitespace of every nonblank line
+between the position and the current line. If there is no visible
+indent point beyond the current column, `tab-to-tab-stop' is done
+instead."
   (interactive)
   ;; just insert two spaces for lidr if not on a code line
   (if (and (idris2-lidr-p)
@@ -131,35 +135,34 @@ column, `tab-to-tab-stop' is done instead."
                 (while (progn (beginning-of-line)
                               (not (bobp)))
                   (forward-line -1)
-                  (if (not (if (idris2-lidr-p)           ;; if this line isn't whitespace-only
-                               (or (looking-at ">[ \t]*\n") ;; whitespace only
-                                   (looking-at "[^>]"))     ;; not code
-                             (looking-at "[ \t]*\n")))
-                      (let ((this-indentation (idris2-simple-indent-current-indentation)))
-                        (if (or (not invisible-from)
+                  (when (not (if (idris2-lidr-p)            ;; if this line isn't whitespace-only
+                                 (or (looking-at ">[ \t]*\n") ;; whitespace only
+                                     (looking-at "[^>]"))     ;; not code
+                               (looking-at "[ \t]*\n")))
+                    (let ((this-indentation (idris2-simple-indent-current-indentation)))
+                      (when (or (not invisible-from)
                                 (< this-indentation invisible-from))
-                            (if (> this-indentation start-column)
-                                (setq invisible-from this-indentation)
-                              (let ((end (line-beginning-position 2)))
-                                (skip-chars-forward " \t" end)
-                                ;; Current indent + 2 is a valid stop
-                                (if (= (current-column) start-column)
-                                    (forward-char 2)
-                                  (progn
-                                    (move-to-column start-column)
-                                    ;; Is start-column inside a tab on this line?
-                                    (if (> (current-column) start-column)
-                                        (backward-char 1))
-                                    (or (looking-at "[ \t]")
-                                        (skip-chars-forward "^ \t" end))
-                                    (skip-chars-forward " \t" end)))
-                                (let ((col (current-column)))
-                                  (throw 'idris2-simple-indent-break
-                                         (if (or (= (point) end)
-                                                 (and invisible-from
-                                                      (> col invisible-from)))
-                                             invisible-from
-                                           col)))))))))))))
+                        (if (> this-indentation start-column)
+                            (setq invisible-from this-indentation)
+                          (let ((end (line-beginning-position 2)))
+                            (skip-chars-forward " \t" end)
+                            ;; Current indent + 2 is a valid stop
+                            (when (= (current-column) start-column)
+                              (forward-char 2)
+                              (move-to-column start-column)
+                              ;; Is start-column inside a tab on this line?
+                              (when (> (current-column) start-column)
+                                (backward-char 1))
+                              (or (looking-at "[ \t]")
+                                  (skip-chars-forward "^ \t" end))
+                              (skip-chars-forward " \t" end))
+                            (let ((col (current-column)))
+                              (throw 'idris2-simple-indent-break
+                                     (if (or (= (point) end)
+                                             (and invisible-from
+                                                  (> col invisible-from)))
+                                         invisible-from
+                                       col)))))))))))))
       (if indent
           (let ((opoint (point-marker)))
             (idris2-simple-indent-indent-line-to indent)
@@ -180,7 +183,6 @@ column, `tab-to-tab-stop' is done instead."
       (setf (cdr indent-to) (car indent-to))
       (setf (car indent-to) (idris2-simple-indent-current-indentation)))
     (idris2-simple-indent-indent-line-to (cdr indent-to))))
-
 
 (defun idris2-simple-indent-newline-same-col ()
   "Make a newline and go to the same column as the current line."

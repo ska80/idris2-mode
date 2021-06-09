@@ -40,7 +40,6 @@
     (string-match "^[^ ]*" name)
     (capitalize (match-string 0 name))))
 
-
 (defvar idris2-words-of-encouragement
   `("Let the hacking commence!"
     "Hacks and glory await!"
@@ -55,7 +54,7 @@
     "Constructors are red / Types are blue / Your code always works / Because Idris2 loves you"))
 
 (defun idris2-random-words-of-encouragement ()
-  "Return a random string of encouragement"
+  "Return a random string of encouragement."
   (nth (random (length idris2-words-of-encouragement))
        idris2-words-of-encouragement))
 
@@ -66,7 +65,7 @@
 (defvar idris2-connection nil
   "The Idris2 connection.")
 
-(defvar idris2-protocol-version 0 "The protocol version")
+(defvar idris2-protocol-version 0 "The protocol version.")
 
 (defun idris2-version-hook-function (event)
   (pcase event
@@ -76,10 +75,12 @@
      t)))
 
 (defvar-local idris2-load-packages nil
-  "The list of packages to be loaded by Idris2. Set using file or directory variables.")
+  "The list of packages to be loaded by Idris2.  Set using file
+  or directory variables.")
 
 (defun idris2-compute-flags ()
-  "Calculate the command line options to use when running Idris2."
+  "Calculate the command line options to use when running
+Idris2."
   (append (cl-loop for p in idris2-load-packages
                    collecting "-p"
                    collecting p)
@@ -88,11 +89,12 @@
                      idris2-command-line-option-functions)))
 
 (defvar idris2-current-flags nil
-  "The list of command-line-args actually passed to Idris2. This
-  is maintained to restart Idris2 when the arguments change.")
+  "The list of command-line-args actually passed to Idris2.  This
+is maintained to restart Idris2 when the arguments change.")
 
 (autoload 'idris2-prover-event-hook-function "idris2-prover.el")
 (autoload 'idris2-quit "idris2-commands.el")
+
 (defun idris2-run ()
   "Run an inferior Idris2 process."
   (interactive)
@@ -176,7 +178,8 @@
     (pop-to-buffer (get-buffer (idris2-buffer-name :process)))))
 
 (defun idris2-output-filter (process string)
-  "Accept output from the socket and process all complete messages"
+  "Accept output from the socket and process all complete
+messages"
   (with-current-buffer (process-buffer process)
     (goto-char (point-max))
     (insert string))
@@ -215,7 +218,8 @@
   (string-to-number (buffer-substring-no-properties (point) (+ (point) 6)) 16))
 
 (defun idris2-send (sexp proc)
-  "Send a SEXP to Idris2 over the PROC. This is the lowest level of communication."
+  "Send a SEXP to Idris2 over the PROC. This is the lowest level
+of communication."
   (let* ((msg (concat (idris2-prin1-to-string sexp) "\n"))
          (string (concat (idris2-encode-length (length msg)) msg)))
     (idris2-event-log sexp t)
@@ -226,7 +230,8 @@
   (format "%06x" n))
 
 (defun idris2-prin1-to-string (sexp)
-  "Like `prin1-to-string', but don't octal-escape non-ascii characters."
+  "Like `prin1-to-string', but don't octal-escape non-ascii
+characters."
   (with-temp-buffer
     (let (print-escape-nonascii
           print-escape-newlines
@@ -237,9 +242,9 @@
 
 (defvar idris2-rex-continuations '()
   "List of (ID FUNCTION [FUNCTION]) continuations waiting for RPC
-  results. The first function will be called with a final result,
-  and the second (if present) will be called with intermediate
-  output results.")
+results. The first function will be called with a final result,
+and the second (if present) will be called with intermediate
+output results.")
 
 (defvar idris2-continuation-counter 1
   "Continuation serial number counter.")
@@ -296,13 +301,13 @@ versions cannot deal with that."
                               (cons var)))
        (idris2-dispatch-event
         (list :emacs-rex ,sexp
-              (lambda (,result)
-                (destructure-case ,result
-                  ,@continuations))
+              #'(lambda (,result)
+                  (destructure-case ,result
+                    ,@continuations))
               ,@(when intermediate
-                  `((lambda (,result)
-                      (destructure-case ,result
-                        ,@continuations)))))
+                  `(#'(lambda (,result)
+                        (destructure-case ,result
+                          ,@continuations)))))
         idris2-connection))))
 
 (defun idris2-eval-async (sexp cont &optional failure-cont)
@@ -334,9 +339,11 @@ versions cannot deal with that."
 ignoring intermediate output. If `NO-ERRORS' is non-nil, don't
 trigger warning buffers and don't call `ERROR' if there was an
 Idris2 error."
-  (let* ((tag (cl-gensym (format "idris2-result-%d-"
-                                 (1+ idris2-continuation-counter))))
-	 (idris2-stack-eval-tags (cons tag idris2-stack-eval-tags)))
+  (let* ((tag
+          (cl-gensym (format "idris2-result-%d-"
+                             (1+ idris2-continuation-counter))))
+	 (idris2-stack-eval-tags
+          (cons tag idris2-stack-eval-tags)))
     (apply
      #'funcall
      (catch tag
@@ -360,12 +367,12 @@ Idris2 error."
              (inhibit-quit nil))
          (while t
            (when (eq (process-status idris2-process) 'exit)
-             (error "Idris2 process exited unexpectedly"))
+             (error "Idris2 process exited unexpectedly."))
            (accept-process-output idris2-connection 0.1)))))))
 
 (defvar idris2-options-cache '()
-  "An alist caching the Idris2 interpreter options, to
-  allow consulting them when the Idris2 interpreter is busy.")
+  "An alist caching the Idris2 interpreter options, to allow
+consulting them when the Idris2 interpreter is busy.")
 
 (defun idris2-update-options-cache ()
   (idris2-eval-async '(:get-options)
@@ -412,14 +419,12 @@ support asking for versions."
 Returns nil if the version of Idris2 used doesn't support asking
 for versions."
   (let ((version (idris2-get-idris2-version)))
-    (if (consp version) ; returns nil on older versions of Idris2
-        (let* ((version-number (car version))
-               (version-prerelease (cdr version)))
-          (concat (mapconcat #'number-to-string version-number ".")
-                  (if version-prerelease
-                      (concat "-" (mapconcat #'identity version-prerelease "-"))
-                    "")))
-      nil)))
-
+    (when (consp version)               ; returns nil on older versions of Idris2
+      (let* ((version-number (car version))
+             (version-prerelease (cdr version)))
+        (concat (mapconcat #'number-to-string version-number ".")
+                (if version-prerelease
+                    (concat "-" (mapconcat #'identity version-prerelease "-"))
+                  ""))))))
 
 (provide 'inferior-idris2)

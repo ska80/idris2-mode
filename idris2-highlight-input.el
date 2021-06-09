@@ -29,7 +29,8 @@
 (require 'idris2-settings)
 
 (defun idris2-highlight-remove-overlays (&optional buffer)
-  "Remove all Idris2 highlighting overlays from BUFFER, or the current buffer if it's nil."
+  "Remove all Idris2 highlighting overlays from BUFFER, or the
+current buffer if it's NIL."
   (interactive)
   (with-current-buffer (or buffer (current-buffer))
     (save-restriction
@@ -41,20 +42,24 @@
 (defun idris2-highlight-column (idris2-col)
   "Compute the Emacs position offset of the Idris2 column IDRIS-COL, for highlighting.
 
-In particular, this takes bird tracks into account in literate Idris2."
+In particular, this takes bird tracks into account in literate
+Idris2."
   (+ idris2-col (if (idris2-lidr-p) 1 -1)))
 
 (defun idris2-highlight--overlay-modification-hook (&rest args)
   "Delete semantic overlays if they are changed.
 
-See Info node `(elisp)Overlay Properties' to understand how ARGS are used."
+See Info node `(elisp)Overlay Properties' to understand how ARGS
+are used."
   ;; There are 5 args when it's called post-modification
   (when (= (length args) 5)
     (let ((overlay (car args)))
       (delete-overlay overlay))))
 
 (defun idris2-highlight-input-region (buffer start-line start-col end-line end-col highlight)
-  "Highlight in BUFFER using an overlay from START-LINE and START-COL to END-LINE and END-COL and the semantic properties specified in HIGHLIGHT."
+  "Highlight in BUFFER using an overlay from START-LINE and
+START-COL to END-LINE and END-COL and the semantic properties
+specified in HIGHLIGHT."
   (when idris2-semantic-source-highlighting
     (save-restriction
       (widen)
@@ -82,6 +87,6 @@ See Info node `(elisp)Overlay Properties' to understand how ARGS are used."
                    end-line end-col
                    highlight ))))))
 
-
 (provide 'idris2-highlight-input)
+
 ;;; idris2-highlight-input.el ends here

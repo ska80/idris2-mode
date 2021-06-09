@@ -32,10 +32,10 @@
 (require 'idris2-settings)
 
 (defvar idris2-hole-list-buffer-name (idris2-buffer-name :holes)
-  "The name of the buffer containing Idris2 holes")
+  "The name of the buffer containing Idris2 holes.")
 
 (defun idris2-hole-list-quit ()
-  "Quit the Idris2 hole list"
+  "Quit the Idris2 hole list."
   (interactive)
   (idris2-kill-buffer idris2-hole-list-buffer-name))
 
@@ -70,16 +70,19 @@ Invoces `idris2-hole-list-mode-hook'."
   (setq-local prop-menu-item-functions '(idris2-context-menu-items)))
 
 (defun idris2-hole-list-buffer ()
-  "Return the Idris2 hole buffer, creating one if there is not one"
+  "Return the Idris2 hole buffer, creating one if there is not
+one."
   (get-buffer-create idris2-hole-list-buffer-name))
 
 (defun idris2-hole-list-buffer-visible-p ()
-  (if (get-buffer-window idris2-hole-list-buffer-name 'visible) t nil))
+  (if (get-buffer-window idris2-hole-list-buffer-name 'visible)
+      t nil))
 
 (defun idris2-hole-list-show (hole-info)
   (if (null hole-info)
-      (progn (message "No holes found!")
-             (idris2-hole-list-quit))
+      (progn
+        (message "No holes found!")
+        (idris2-hole-list-quit))
     (with-current-buffer (idris2-hole-list-buffer)
       (setq buffer-read-only nil)
       (erase-buffer)
@@ -111,38 +114,39 @@ Invoces `idris2-hole-list-mode-hook'."
     (apply #'insert-button (idris2-tree.button tree))
     (insert (idris2-tree.after-button tree))))
 
-
 ;;; Prevent circularity error
+
 (autoload 'idris2-prove-hole "idris2-commands.el")
 
 (defun idris2-tree-for-hole (hole)
   "Generate a tree for HOLE.
 
-HOLE should be a three-element list consisting of the
-hole name, its premises, and its conclusion."
+HOLE should be a three-element list consisting of the hole name,
+its premises, and its conclusion."
   (cl-destructuring-bind (name premises conclusion) hole
     (make-idris2-tree :item name
-                     :button (if idris2-enable-elab-prover
-                                 `("[E]"
-                                   help-echo "Elaborate interactively"
-                                   action ,#'(lambda (_)
-                                               (interactive)
-                                               (idris2-prove-hole name t)))
-                               `("[P]"
-                                 help-echo "Open in prover"
-                                 action ,#'(lambda (_)
-                                             (interactive)
-                                             (idris2-prove-hole name))))
-                     :highlighting `((0 ,(length name) ((:decor :metavar))))
-                     :print-fn #'idris2-hole-tree-printer
-                     :collapsed-p (not idris2-hole-list-show-expanded) ; from customize
-                     :preserve-properties '(idris2-tt-term)
-                     :kids (list (idris2-tree-for-hole-details name premises conclusion)))))
+                      :button (if idris2-enable-elab-prover
+                                  `("[E]"
+                                    help-echo "Elaborate interactively"
+                                    action ,#'(lambda (_)
+                                                (interactive)
+                                                (idris2-prove-hole name t)))
+                                `("[P]"
+                                  help-echo "Open in prover"
+                                  action ,#'(lambda (_)
+                                              (interactive)
+                                              (idris2-prove-hole name))))
+                      :highlighting `((0 ,(length name) ((:decor :metavar))))
+                      :print-fn #'idris2-hole-tree-printer
+                      :collapsed-p (not idris2-hole-list-show-expanded) ; from customize
+                      :preserve-properties '(idris2-tt-term)
+                      :kids (list (idris2-tree-for-hole-details name premises conclusion)))))
 
 (defun idris2-tree-for-hole-details (name premises conclusion)
-  (let* ((name-width (1+ (apply #'max 0 (length name)
-                                (mapcar #'(lambda (h) (length (car h)))
-                                        premises))))
+  (let* ((name-width
+          (1+ (apply #'max 0 (length name)
+                     (mapcar #'(lambda (h) (length (car h)))
+                             premises))))
          (divider-marker nil)
          (contents (with-temp-buffer
                      (dolist (h premises)
@@ -188,9 +192,8 @@ hole name, its premises, and its conclusion."
                          (insert "\n")))
                      (buffer-string))))
     (make-idris2-tree :item contents
-                     :active-p nil
-                     :highlighting '()
-                     :preserve-properties '(idris2-tt-term))))
-
+                      :active-p nil
+                      :highlighting '()
+                      :preserve-properties '(idris2-tt-term))))
 
 (provide 'idris2-hole-list)

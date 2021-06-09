@@ -7,7 +7,6 @@
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "24"))
 
-
 ;;; Commentary:
 
 ;; This is an Emacs mode for editing Idris2 packages. It requires the latest
@@ -15,6 +14,7 @@
 ;; Idris2.
 
 ;;; Code:
+
 (require 'ansi-color)
 (require 'compile)
 
@@ -27,14 +27,13 @@
 
 (defface idris2-ipkg-keyword-face
   '((t (:inherit font-lock-keyword-face)))
-  "The face to highlight Idris2 package keywords"
+  "The face to highlight Idris2 package keywords."
   :group 'idris2-faces)
 
 (defface idris2-ipkg-package-name-face
   '((t (:inherit font-lock-function-name-face)))
-  "The face to highlight the name of the package"
+  "The face to highlight the name of the package."
   :group 'idris2-faces)
-
 
 ;;; Syntax
 
@@ -58,7 +57,6 @@
 (defconst idris2-ipkg-font-lock-defaults
   `(,idris2-ipkg-keywords))
 
-
 ;;; Completion
 
 (defun idris2-ipkg-find-keyword ()
@@ -79,7 +77,7 @@
       failure)))
 
 (defun idris2-ipkg-complete-keyword ()
-  "Complete the current .ipkg keyword, if possible"
+  "Complete the current .ipkg keyword, if possible."
   (interactive)
   (cl-destructuring-bind (identifier start end) (idris2-ipkg-find-keyword)
     (when identifier
@@ -87,9 +85,10 @@
 
 ;;; Inserting fields
 (defun idris2-ipkg-insert-field ()
-  "Insert one of the ipkg fields"
+  "Insert one of the ipkg fields."
   (interactive)
-  (let ((field (completing-read "Field: " (remove "package" idris2-ipkg-keywords) nil t)))
+  (let ((field
+         (completing-read "Field: " (remove "package" idris2-ipkg-keywords) nil t)))
     (beginning-of-line)
     (while (and (not (looking-at-p "^\\s-*$")) (= (forward-line) 0)))
     (beginning-of-line)
@@ -105,10 +104,12 @@
 ;;; Clickable modules
 
 (defun idris2-ipkg-make-files-clickable ()
-  "Make all modules with existing files clickable, where clicking opens them"
+  "Make all modules with existing files clickable, where clicking
+opens them."
   (interactive)
   (idris2-clear-file-link-overlays 'idris2-ipkg-mode)
-  (let ((src-dir (idris2-ipkg-buffer-src-dir (file-name-directory (buffer-file-name)))))
+  (let ((src-dir
+         (idris2-ipkg-buffer-src-dir (file-name-directory (buffer-file-name)))))
     ;; Make the sourcedir clickable
     (save-excursion
       (goto-char (point-min))
@@ -142,7 +143,8 @@
       (when (re-search-forward "^makefile\\s-*=\\s-*\\([a-zA-Z/0-9]+\\)" nil t)
         (let ((start (match-beginning 1))
               (end (match-end 1))
-              (makefile (concat (file-name-as-directory src-dir) (match-string 1))))
+              (makefile
+               (concat (file-name-as-directory src-dir) (match-string 1))))
         (when (file-exists-p makefile)
           (let ((map (make-sparse-keymap)))
             (define-key map [mouse-2] #'(lambda ()
@@ -150,9 +152,9 @@
                                           (find-file makefile)))
             (idris2-make-file-link-overlay start end map  "mouse-2: edit makefile"))))))))
 
-
 (defun idris2-ipkg-enable-clickable-files ()
-  "Enable setting up clickable modules and makefiles on idle Emacs"
+  "Enable setting up clickable modules and makefiles on idle
+Emacs."
   (interactive)
   (add-hook 'after-save-hook 'idris2-ipkg-make-files-clickable)
   (idris2-ipkg-make-files-clickable))
@@ -167,19 +169,18 @@ directory of the current buffer filename or from
 `default-directory' if that's not found, looking for a file with
 name ending in SUFFIX.  Returns the paths to the matching files,
 or nil if not found."
-  (cl-labels
-      ((find-file-r (path)
-                    (let* ((parent (file-name-directory path))
-                           (matching (if parent
-                                         (idris2-try-directory-files parent t (concat "\\\." suffix "$"))
-                                       nil)))
-                      (cond
-                       (matching matching)
-                       ;; The parent of ~ is nil and the parent of / is itself.
-                       ;; Thus the terminating condition for not finding the file
-                       ;; accounts for both.
-                       ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
-                       (t (find-file-r (directory-file-name parent))))))) ; Continue
+  (cl-labels ((find-file-r (path)
+                           (let* ((parent (file-name-directory path))
+                                  (matching (if parent
+                                                (idris2-try-directory-files parent t (concat "\\\." suffix "$"))
+                                              nil)))
+                             (cond
+                              (matching matching)
+                              ;; The parent of ~ is nil and the parent of / is itself.
+                              ;; Thus the terminating condition for not finding the file
+                              ;; accounts for both.
+                              ((or (null parent) (equal parent (directory-file-name parent))) nil) ; Not found
+                              (t (find-file-r (directory-file-name parent))))))) ; Continue
     (let* ((file (buffer-file-name (current-buffer)))
            (dir (if file (file-name-directory file) default-directory)))
       (when dir
@@ -288,8 +289,7 @@ arguments."
 (defun idris2-ipkg-find-src-dir (&optional ipkg-file)
   (let ((found (or (and ipkg-file (list ipkg-file))
                    (idris2-find-file-upwards "ipkg"))))
-    (if (not found)
-        nil
+    (when found
       (setq ipkg-file (car found))
       ;; Now ipkg-file contains the path to the package
       (with-temp-buffer
@@ -310,8 +310,7 @@ arguments."
 (defun idris2-ipkg-find-cmdline-opts (&optional ipkg-file)
   (let ((found (or (and ipkg-file (list ipkg-file))
                    (idris2-find-file-upwards "ipkg"))))
-    (if (not found)
-        nil
+    (when found
       (setq ipkg-file (car found))
       ;; Now ipkg-file contains the path to the package
       (with-temp-buffer
@@ -319,14 +318,15 @@ arguments."
         (idris2-ipkg-buffer-cmdline-opts)))))
 
 (defun idris2-ipkg-flags-for-current-buffer ()
-  "Extract the command line options field from the current .ipkg buffer."
+  "Extract the command line options field from the current .ipkg
+buffer."
   (let ((opts (idris2-ipkg-find-cmdline-opts)))
-    (if (stringp opts)
-        (split-string opts nil t)
-      nil)))
+    (when (stringp opts)
+      (split-string opts nil t))))
 
 (defun idris2-ipkg-pkgs-for-current-buffer ()
-  "Find the explicit list of packages for the current .ipkg buffer."
+  "Find the explicit list of packages for the current .ipkg
+buffer."
   (let ((file (idris2-find-file-upwards "ipkg")))
     (when file
       (with-temp-buffer
@@ -347,7 +347,8 @@ arguments."
           pkgs)))))
 
 (defun idris2-ipkg-pkgs-flags-for-current-buffer ()
-  "Compute a list of Idris2 command line options based on the pkgs field of the .ipkg file."
+  "Compute a list of Idris2 command line options based on the
+pkgs field of the .ipkg file."
   (let ((pkgs (idris2-ipkg-pkgs-for-current-buffer)))
     (cl-loop for pkg in pkgs appending (list "-p" pkg))))
 

@@ -70,7 +70,8 @@ contributing the settings upstream to the theme maintainer."
 
 (defface idris2-parameter-face
   '((t (:inherit font-lock-constant-face)))
-  "The face to highlight formal parameters to function definitions with."
+  "The face to highlight formal parameters to function
+definitions with."
   :group 'idris2-faces)
 
 (defface idris2-colon-face
@@ -90,14 +91,14 @@ contributing the settings upstream to the theme maintainer."
 
 (defface idris2-char-face
   '((t (:inherit font-lock-string-face)))
-  "The face used to highlight character literals in Idris2"
+  "The face used to highlight character literals in Idris2."
   :group 'idris2-faces)
 
 (defface idris2-unsafe-face
   '((t (:inherit font-lock-warning-face)))
-  "The face used to highlight unsafe Idris2 features, such as %assert_total"
+  "The face used to highlight unsafe Idris2 features, such as
+%assert_total"
   :group 'idris2-faces)
-
 
 (defvar idris2-definition-keywords
   '("data" "codata" "constructor" "interface" "record" "postulate")
@@ -150,7 +151,6 @@ contributing the settings upstream to the theme maintainer."
     "module" "mutual" "namespace" "of" "let" "parameters" "partial"
     "pattern" "prefix" "private" "proof" "public" "rewrite" "syntax"
     "tactics" "then" "total" "using" "where" "with"))
-
 
 (defconst idris2-special-char-regexp
   (let ((idris2-special-chars
@@ -265,9 +265,6 @@ esp. `font-lock-defaults', for details."
         (,(apply-partially #'idris2-font-lock-literate-search
                            (regexp-opt '("believe_me" "really_believe_me" "assert_total" "assert_smaller" "prim__believe_me"))
                            (idris2-lidr-p))
-         0 'idris2-unsafe-face t)
-        ))))
-
-
+         0 'idris2-unsafe-face t)))))
 
 (provide 'idris2-syntax)

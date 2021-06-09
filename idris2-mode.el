@@ -30,40 +30,39 @@
 (require 'idris2-common-utils)
 (require 'idris2-ipkg-mode)
 
-
 (defun idris2-mode-context-menu-items (plist)
-  "Compute menu items from PLIST that are specific to editing text in `idris2-mode'."
+  "Compute menu items from PLIST that are specific to editing
+text in `idris2-mode'."
   (let ((ref (plist-get plist 'idris2-ref))
         (ref-style (plist-get plist 'idris2-ref-style)))
     (when (and ref (equal ref-style :metavar))
       (list (list "Extract lemma"
                   (let ((location (point)))
-                    (lambda ()
-                      (interactive)
-                      (save-excursion
-                        (goto-char location)
-                        (idris2-make-lemma)))))
+                    #'(lambda ()
+                        (interactive)
+                        (save-excursion
+                          (goto-char location)
+                          (idris2-make-lemma)))))
             (list "Fill with case block"
                   (let ((location (point)))
-                    (lambda ()
-                      (interactive)
-                      (save-excursion
-                        (goto-char location)
-                        (idris2-make-cases-from-hole)))))))))
+                    #'(lambda ()
+                        (interactive)
+                        (save-excursion
+                          (goto-char location)
+                          (idris2-make-cases-from-hole)))))))))
 
-(defvar idris2-mode-map (let ((map (make-sparse-keymap)))
-                         (cl-loop for keyer
-                                  in '(idris2-define-loading-keys
-                                       idris2-define-docs-keys
-                                       idris2-define-editing-keys
-                                       idris2-define-general-keys
-                                       idris2-define-ipkg-keys
-                                       idris2-define-ipkg-opening-keys)
-                                  do (funcall keyer map))
-                         map)
+(defvar idris2-mode-map
+  (let ((map (make-sparse-keymap)))
+    (cl-loop for keyer
+             in '(idris2-define-loading-keys
+                  idris2-define-docs-keys
+                  idris2-define-editing-keys
+                  idris2-define-general-keys
+                  idris2-define-ipkg-keys
+                  idris2-define-ipkg-opening-keys)
+             do (funcall keyer map))
+    map)
   "Keymap used in Idris2 mode.")
-
-
 
 (easy-menu-define idris2-mode-menu idris2-mode-map
   "Menu for the Idris2 major mode"
@@ -110,7 +109,6 @@
       :visible (idris2-get-option :error-context)])
     ["Customize idris2-mode" (customize-group 'idris2) t]
     ["Customize fonts and colors" (customize-group 'idris2-faces) t]))
-
 
 ;;;###autoload
 (define-derived-mode idris2-mode prog-mode "Idris2"
@@ -168,7 +166,6 @@ Invokes `idris2-mode-hook'."
 ;;;###autoload
 (push '("\\.lidr$" . idris2-mode) auto-mode-alist)
 
-
 ;;; Handy utilities for other modes
 (eval-after-load 'flycheck
   '(eval
@@ -190,4 +187,5 @@ Invokes `idris2-mode-hook'."
        (add-to-list 'flycheck-checkers 'idris2))))
 
 (provide 'idris2-mode)
+
 ;;; idris2-mode.el ends here

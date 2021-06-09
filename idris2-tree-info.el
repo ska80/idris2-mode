@@ -25,6 +25,7 @@
 ;; maintaining overlays and markers.
 
 ;;; Code:
+
 (require 'cl-lib)
 (require 'prop-menu)
 
@@ -35,7 +36,8 @@
 (require 'idris2-warnings-tree)
 
 (defvar idris2-tree-info-buffer-name (idris2-buffer-name :tree-viewer)
-  "The name of the buffer that `idris2-mode' uses to show general tree-structured command output.")
+  "The name of the buffer that `idris2-mode' uses to show general
+  tree-structured command output.")
 
 (defun idris2-tree-info-quit ()
   "Quit the Idris2 tree info viewer."
@@ -56,7 +58,7 @@
     map))
 
 (easy-menu-define idris2-tree-info-mode-menu idris2-tree-info-mode-map
-  "Menu for the Idris2 tree viewer buffer"
+  "Menu for the Idris2 tree viewer buffer."
   `("Idris2 Tree Viewer"
     ["Show term interaction widgets" idris2-add-term-widgets t]
     ["Close Idris2 tree viewer buffer" idris2-tree-info-quit t]))
@@ -101,8 +103,7 @@ the buffer."
       (dolist (tree trees)
         (cl-assert (idris2-tree-p tree) t)
         (idris2-tree-insert tree "")
-        (insert "\n")
-	))
+        (insert "\n")))
     (goto-char (point-min)))
   (unless (idris2-tree-info-buffer-visible-p)
     (pop-to-buffer (idris2-tree-info-buffer))
@@ -118,4 +119,5 @@ buffer."
   (idris2-tree-info-show-multiple (list tree) title))
 
 (provide 'idris2-tree-info)
+
 ;;; idris2-tree-info.el ends here

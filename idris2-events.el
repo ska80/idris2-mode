@@ -68,4 +68,5 @@ The event is only logged if `idris2-log-events' is non-nil."
     (pp event buffer)))
 
 (provide 'idris2-events)
+
 ;;; idris2-events.el ends here

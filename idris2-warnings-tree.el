@@ -25,6 +25,7 @@
 ;; Boston, MA 02111-1307, USA.
 
 ;;; Code:
+
 (require 'cl-lib)
 (require 'prop-menu)
 
@@ -33,7 +34,7 @@
 (require 'idris2-common-utils)
 
 (defvar idris2-notes-buffer-name (idris2-buffer-name :notes)
-  "The name of the buffer containing Idris2 errors")
+  "The name of the buffer containing Idris2 errors.")
 
 (defun idris2-list-compiler-notes ()
   "Show the compiler notes in tree view."
@@ -45,8 +46,7 @@
         (idris2-compiler-notes-mode)
         (setq buffer-read-only nil)
         (erase-buffer)
-        (if (null notes)
-            nil
+        (unless (null notes)
           (let ((root (idris2-compiler-notes-to-tree notes)))
             (idris2-tree-insert root "")
             (insert "\n")
@@ -60,12 +60,13 @@
 
 (defun idris2-tree-for-note (note)
   (let* ((buttonp (> (length (nth 0 note)) 0)) ;; if empty source location
-         (button-text `(,(format "%s line %s col %s:" (nth 0 note) (nth 1 note) (nth 2 note))
-                        help-echo "go to source location"
-                        action ,#'(lambda (_)
-                                    (idris2-show-source-location (nth 0 note)
-                                                                (nth 1 note)
-                                                                (nth 2 note))))))
+         (button-text
+          `(,(format "%s line %s col %s:" (nth 0 note) (nth 1 note) (nth 2 note))
+            help-echo "go to source location"
+            action ,#'(lambda (_)
+                        (idris2-show-source-location (nth 0 note)
+                                                     (nth 1 note)
+                                                     (nth 2 note))))))
     (make-idris2-tree :item (nth 3 note)
                      :highlighting (if (> (length note) 4) (nth 4 note) '())
                      :button (if buttonp button-text nil)
@@ -122,22 +123,22 @@ Invokes `idris2-compiler-notes-mode-hook'."
   (idris2-goto-source-location filename lineno col is-same-window))
 
 (defun idris2-get-fullpath-from-idris2-file (filename)
-  "Returns the full filepath of a filename receives from the inferior idris2 process"
-  (concat (file-name-as-directory idris2-process-current-working-directory) filename)
-  )
+  "Returns the full filepath of a filename receives from the
+inferior idris2 process."
+  (concat (file-name-as-directory idris2-process-current-working-directory)
+          filename))
 
 (defun idris2-goto-location (fullpath)
-  "Opens buffer for filename"
-  (if (file-exists-p fullpath)
+  "Opens buffer for filename."
+  (when (file-exists-p fullpath)
     (or (get-buffer fullpath)
 	(get-file-buffer fullpath)
-	(find-file-noselect fullpath)))
-  )
+	(find-file-noselect fullpath))))
 
 (defun idris2-goto-source-location-full (fullpath lineno col is-same-window)
   "Move to the source location FILENAME LINENO COL. Filename must
 be a full path. Otherwise works just like
-idris2-goto-source-location"
+IDRIS2-GOTO-SOURCE-LOCATION."
   (let ((buf (idris2-goto-location fullpath)))
     (set-buffer buf)
     (pop-to-buffer buf (if is-same-window '(display-buffer-same-window) t))
@@ -164,7 +165,9 @@ idris2-goto-source-location"
   "Move to the source location FILENAME LINENO COL. If the buffer
 containing the file is narrowed and the location is hidden, show
 a preview and offer to widen."
-  (idris2-goto-source-location-full (idris2-get-fullpath-from-idris2-file filename) lineno col is-same-window))
+  (idris2-goto-source-location-full
+   (idris2-get-fullpath-from-idris2-file filename)
+   lineno col is-same-window))
 
 ;;;;;; Tree Widget
 

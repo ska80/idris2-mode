@@ -37,7 +37,6 @@
 
 (eval-when-compile (require 'cl-lib))
 
-
 (defvar idris2-prompt-string "Idris2"
   "The prompt shown in the REPL.")
 
@@ -57,21 +56,19 @@
 (defun idris2-repl-get-logo ()
   "Return the path to the Idris2 logo if it exists, or `nil' if not."
   (let ((logo-path (concat idris2-mode-path "logo-small.png")))
-    (if (file-readable-p logo-path)
-        logo-path
-      nil)))
+    (when (file-readable-p logo-path)
+      logo-path)))
 
 (defun idris2-repl-insert-logo ()
   "Attempt to insert a graphical logo.
 Returns non-`nil' on success, `nil' on failure."
   (let ((logo (idris2-repl-get-logo)))
-    (if (and (display-graphic-p)
+    (when (and (display-graphic-p)
              (image-type-available-p 'png)
              logo)
-        (progn (insert-image (create-image logo)
-                             (idris2-repl-welcome-message))
-               t)
-      nil)))
+        (insert-image (create-image logo)
+                      (idris2-repl-welcome-message))
+        t)))
 
 (defun idris2-repl-animate-banner ()
   "Insert a text banner using animation.
@@ -100,7 +97,8 @@ Returns non-`nil' on success, `nil' on failure."
 
 (defun idris2-repl-insert-prompt (&optional always-insert)
   "Insert or update Idris2 prompt in buffer.
-If ALWAYS-INSERT is non-nil, always insert a prompt at the end of the buffer."
+If ALWAYS-INSERT is non-nil, always insert a prompt at the end of
+the buffer."
   ;; Put the prompt at the end, if no active prompt is present.
   (when always-insert
     (set-marker idris2-prompt-start (point-max))
@@ -109,10 +107,11 @@ If ALWAYS-INSERT is non-nil, always insert a prompt at the end of the buffer."
   (let ((inhibit-read-only 'idris2-repl-prompt))
     (delete-region idris2-prompt-start idris2-input-start))
   (unless (bolp) (insert "\n"))
-  (let ((prompt (if (and (equal idris2-repl-prompt-style 'short)
-                         (not idris2-prover-currently-proving))
-                    "λΠ> "
-                  (format "%s> " idris2-prompt-string))))
+  (let ((prompt
+         (if (and (equal idris2-repl-prompt-style 'short)
+                  (not idris2-prover-currently-proving))
+             "λΠ> "
+           (format "%s> " idris2-prompt-string))))
     (set-marker idris2-prompt-start (point))
     (idris2-propertize-region
         `(face idris2-repl-prompt-face
@@ -126,14 +125,12 @@ If ALWAYS-INSERT is non-nil, always insert a prompt at the end of the buffer."
     (set-marker idris2-input-start (point-max))
     (goto-char idris2-input-start)))
 
-
 (defun idris2-repl-update-prompt (new-prompt)
   "Update prompt string to NEW-PROMPT."
   (unless (equal idris2-prompt-string new-prompt)
     (setq idris2-prompt-string new-prompt)
     (with-current-buffer (idris2-repl-buffer)
       (idris2-repl-insert-prompt))))
-
 
 (defun idris2-repl-buffer ()
   "Return or create the Idris2 REPL buffer."
@@ -240,7 +237,11 @@ Invokes `idris2-repl-mode-hook'."
      t)
     (`(:warning ,output ,_target)
      (when (member 'warnings-repl idris2-warnings-printing)
-       (idris2-repl-write-string (format "Error: %s line %d (col %d):\n%s" (nth 0 output) (nth 1 output) (if (eq (safe-length output) 3) 0 (nth 2 output)) (car (last output))))))
+       (idris2-repl-write-string
+        (format "Error: %s line %d (col %d):\n%s"
+                (nth 0 output) (nth 1 output)
+                (if (eq (safe-length output) 3) 0 (nth 2 output))
+                (car (last output))))))
     (`(:run-program ,file ,_target)
      (idris2-execute-compiled-program file))
     (_ nil)))
@@ -281,12 +282,11 @@ Invokes `idris2-repl-mode-hook'."
       (idris2-repl-eval-string input input-start))))
 
 (defun idris2-repl-complete ()
-  "Completion of the current input"
+  "Completion of the current input."
   (let* ((input (idris2-repl-current-input))
          (result (idris2-eval `(:repl-completions ,input))))
     (cl-destructuring-bind (completions partial) (car result)
-      (if (null completions)
-          nil
+      (unless (null completions)
         (list (+ idris2-input-start (length partial)) (point-max) completions)))))
 
 (defun find-common-prefix (input slist)
@@ -314,7 +314,9 @@ Invokes `idris2-repl-mode-hook'."
   (buffer-substring-no-properties idris2-input-start (point-max)))
 
 (defun idris2-repl-highlight-input (start-pos start-line start-col end-line end-col props)
-  "Apply semantic highlighting to the REPL input beginning at START-POS using the Idris2 location information START-LINE, START-COL, END-LINE, and END-COL and semantic annotations PROPS."
+  "Apply semantic highlighting to the REPL input beginning at
+START-POS using the Idris2 location information START-LINE,
+START-COL, END-LINE, and END-COL and semantic annotations PROPS."
   (let ((buffer (get-buffer (idris2-buffer-name :repl))))
     (with-current-buffer buffer
       (save-restriction
@@ -336,7 +338,8 @@ Invokes `idris2-repl-mode-hook'."
                                         props))))))
 
 (defun idris2-repl-eval-string (string start)
-  "Evaluate STRING on the inferior Idris2, where input was at position START."
+  "Evaluate STRING on the inferior Idris2, where input was at
+position START."
   (idris2-rex (start) (list :interpret string) t
     ((:ok result &optional spans)
      (pcase result
@@ -365,7 +368,6 @@ Invokes `idris2-repl-mode-hook'."
     (idris2-repl-insert-prompt)
     (idris2-repl-show-maximum-output)))
 
-
 (defun idris2-repl-write-string (string)
   "Append STRING to output."
   (with-current-buffer (idris2-repl-buffer)
@@ -381,7 +383,6 @@ Invokes `idris2-repl-mode-hook'."
         (insert-before-markers "\n")))
     (idris2-repl-insert-prompt)
     (idris2-repl-show-maximum-output)))
-
 
 (defun idris2-repl-insert-result (string &optional highlighting)
   "Insert STRING and mark it asg evaluation result.
@@ -403,19 +404,18 @@ highlighting information from Idris2."
     (idris2-repl-insert-prompt)
     (idris2-repl-show-maximum-output)))
 
-
 (defun idris2-repl-show-maximum-output ()
   "Put the end of the buffer at the bottom of the window."
   (when (eobp)
-    (let ((win (if (eq (window-buffer) (current-buffer))
-                   (selected-window)
-                 (get-buffer-window (current-buffer) t))))
+    (let ((win
+           (if (eq (window-buffer) (current-buffer))
+               (selected-window)
+             (get-buffer-window (current-buffer) t))))
       (when win
         (with-selected-window win
           (set-window-point win (point-max))
           (recenter -1)
           (goto-char idris2-input-start))))))
-
 
 ;;; history
 
@@ -428,7 +428,7 @@ highlighting information from Idris2."
     (setq idris2-repl-input-history
           (remove string idris2-repl-input-history)))
   (unless (equal string (car idris2-repl-input-history))
-      (push string idris2-repl-input-history)))
+    (push string idris2-repl-input-history)))
 
 (defvar-local idris2-repl-input-history-position -1
   "Newer items have smaller indices.")
@@ -480,9 +480,10 @@ DIRECTION is 'forward' or 'backward' (in the history list)."
   "Return the position of the history item matching the PREFIX.
 Return -1 resp. the length of the history if no item matches."
   ;; Loop through the history list looking for a matching line
-  (let* ((step (cl-ecase direction
-                 (forward -1)
-                 (backward 1)))
+  (let* ((step
+          (cl-ecase direction
+            (forward -1)
+            (backward 1)))
          (history idris2-repl-input-history)
          (len (length history)))
     (cl-loop for pos = (+ start-pos step) then (+ pos step)
@@ -501,7 +502,6 @@ Return -1 resp. the length of the history if no item matches."
   "Cycle forward through history."
   (interactive)
   (idris2-repl-history-replace 'forward))
-
 
 ;; persistent history
 (defun idris2-repl-save-all-histories ()
@@ -523,7 +523,8 @@ Return -1 resp. the length of the history if no item matches."
 
 (defun idris2-repl-call-with-handler (fun query)
   "Call FUN in the context of an error handler.
-The handler will use qeuery to ask the use if the error should be ingored."
+The handler will use qeuery to ask the use if the error should be
+ingored."
   (condition-case err
       (funcall fun)
     (error
@@ -537,8 +538,8 @@ The handler will use qeuery to ask the use if the error should be ingored."
 
 (defun idris2-repl-load-history (&optional filename)
   "Set the current Idris2 REPL history.
-It can be read either from FILENAME or `idris2-repl-history-file' or
-from a user defined filename."
+It can be read either from FILENAME or `idris2-repl-history-file'
+or from a user defined filename."
   (interactive (list (idris2-repl-read-history-filename)))
   (let ((file (or filename idris2-repl-history-file)))
     (setq idris2-repl-input-history (idris2-repl-read-history file))))
@@ -554,9 +555,9 @@ The default value for FILENAME is `idris2-repl-history-file'."
 
 (defun idris2-repl-save-history (&optional filename history)
   "Simply save the current Idris2 REPL history to a file.
-When Idris2 is setup to always load the old history and one uses only
-one instance of idris2 all the time, there is no need to merge the
-files and this function is sufficient."
+When Idris2 is setup to always load the old history and one uses
+only one instance of idris2 all the time, there is no need to
+merge the files and this function is sufficient."
   (interactive (list (idris2-repl-read-history-filename)))
   (let ((file (or filename idris2-repl-history-file))
         (hist (or history idris2-repl-input-history)))
@@ -573,4 +574,5 @@ files and this function is sufficient."
           (prin1 (mapcar #'substring-no-properties hist) (current-buffer)))))))
 
 (provide 'idris2-repl)
+
 ;;; idris2-repl.el ends here

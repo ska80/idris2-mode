@@ -24,6 +24,7 @@
 ;; Boston, MA 02111-1307, USA.
 
 ;;; Code:
+
 (require 'idris2-compat)
 
 (defun idris2-is-ident-char-p (ch)
@@ -33,4 +34,5 @@
       (= ch ?_)))
 
 (provide 'idris2-core)
+
 ;;; idris2-core.el ends here

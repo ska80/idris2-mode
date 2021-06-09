@@ -32,19 +32,19 @@
 (require 'idris2-settings)
 (require 'cl-lib)
 
-
 ;;; These variables are here because many things depend on them
 (defvar-local idris2-buffer-dirty-p t
-  "An Idris2 buffer is dirty if there have been modifications since it was last loaded")
+  "An Idris2 buffer is dirty if there have been modifications
+since it was last loaded.")
 
 (defvar idris2-currently-loaded-buffer nil
-  "The buffer currently loaded by the running Idris2")
+  "The buffer currently loaded by the running Idris2.")
 
 (defvar idris2-loaded-region-overlay nil
-  "The region loaded by Idris2, should such a thing exist")
+  "The region loaded by Idris2, should such a thing exist.")
 
 (defvar idris2-process-current-working-directory ""
-  "Working directory of Idris2 process")
+  "Working directory of Idris2 process.")
 
 (defvar idris2-command-line-option-functions nil
   "A list of functions to call to compute the command-line arguments to Idris2.
@@ -57,32 +57,37 @@ This is used to load resource files such as images.  The default
 value is automatically computed from the location of the Emacs
 Lisp package.")
 (when load-file-name ;; guard to allow M-x eval-buffer
-  (setq idris2-mode-path (file-name-directory load-file-name)))
+  (setq idris2-mode-path
+        (file-name-directory load-file-name)))
 
 (defun idris2-buffer-name (type)
   (cl-assert (keywordp type))
   (concat (format "*idris2-%s*" (substring (symbol-name type) 1))))
 
 (defun idris2-kill-buffer (buffer)
-  (let ((buf (cond
-              ((symbolp buffer)
-               (get-buffer (idris2-buffer-name buffer)))
-              ((stringp buffer)
-               (get-buffer buffer))
-              ((bufferp buffer)
-               buffer)
-              (t (message "don't know how to kill buffer")))))
-    (when (and buf (buffer-live-p buf)) (kill-buffer buf))))
+  (let ((buf
+         (cond
+          ((symbolp buffer)
+           (get-buffer (idris2-buffer-name buffer)))
+          ((stringp buffer)
+           (get-buffer buffer))
+          ((bufferp buffer)
+           buffer)
+          (t (message "don't know how to kill buffer")))))
+    (when (and buf (buffer-live-p buf))
+      (kill-buffer buf))))
 
 (defun idris2-minibuffer-respecting-message (text &rest args)
-  "Display TEXT as a message, without hiding any minibuffer contents."
+  "Display TEXT as a message, without hiding any minibuffer
+contents."
   (let ((mtext (format " [%s]" (apply #'format text args))))
     (if (minibuffer-window-active-p (minibuffer-window))
         (minibuffer-message mtext)
       (message "%s" mtext))))
 
 (defun idris2-same-line-p (pos1 pos2)
-  "Return t if buffer positions POS1 and POS2 are on the same line."
+  "Return t if buffer positions POS1 and POS2 are on the same
+line."
   (save-excursion (goto-char (min pos1 pos2))
                   (<= (max pos1 pos2) (line-end-position))))
 
@@ -122,7 +127,9 @@ inserted text (that is, relative to point prior to insertion)."
 (defun idris2-make-link-keymap (url)
   "Compute the keymap for a clickable link to URL."
   (let ((map (make-sparse-keymap))
-        (browse (lambda () (interactive) (browse-url url))))
+        (browse #'(lambda ()
+                    (interactive)
+                    (browse-url url))))
     (define-key map [mouse-1] browse)
     (define-key map [mouse-2] browse)
     (define-key map (kbd "RET") browse)
@@ -130,10 +137,12 @@ inserted text (that is, relative to point prior to insertion)."
 
 (defconst idris2-semantic-properties-clickable-decors
   '(:type :data :function :metavar :module :namespace :postulate)
-  "The decors that should light up as responsive to mouse clicks.")
+  "The decors that should light up as responsive to mouse
+clicks.")
 
 (defun idris2-semantic-properties-face (props)
-  "Compute the text property `face' from the Idris2 properties for a region."
+  "Compute the text property `face' from the Idris2 properties
+for a region."
   (let* ((decor (assoc :decor props))
          (implicit (assoc :implicit props))
          (text-format (assoc :text-formatting props))
@@ -154,9 +163,9 @@ inserted text (that is, relative to point prior to insertion)."
                            (:module '(idris2-semantic-module-face))
                            (_ nil))
                        nil))
-         (implicit-face (if (and implicit (equal (cadr implicit) :True))
-                            '(idris2-semantic-implicit-face)
-                          nil))
+         (implicit-face
+          (when (and implicit (equal (cadr implicit) :True))
+            '(idris2-semantic-implicit-face)))
          (err-face (if idris2-err
                        '(idris2-warning-face)
                      ()))
@@ -190,9 +199,9 @@ inserted text (that is, relative to point prior to insertion)."
     (append (if computed-face (list 'face computed-face) ())
             (if mousable-face (list 'mouse-face mousable-face) ()))))
 
-
 (defun idris2-semantic-properties-eldoc (props)
-  "Compute an Eldoc string from Idris2 semantic properties PROPS"
+  "Compute an Eldoc string from Idris2 semantic properties
+PROPS."
   (let* ((name (assoc :name props))
          (namespace (assoc :namespace props))
          (source-file (assoc :source-file props))
@@ -219,7 +228,6 @@ inserted text (that is, relative to point prior to insertion)."
           (namespace (list 'idris2-eldoc
                            (cadr namespace)))
           (t nil))))
-
 
 (defun idris2-semantic-properties-help-echo (props)
   (let* ((name (assoc :name props))
@@ -314,15 +322,17 @@ inserted text (that is, relative to point prior to insertion)."
 ;;; Was originally slime-search-property - thanks SLIME!
 (defun idris2-search-property (prop &optional backward prop-value-fn)
   "Search for the next text range where PROP is non-nil.
-Return the value of PROP, or nil if it is not found.
-If BACKWARD is non-nil, search backward.
-If PROP-VALUE-FN is non-nil use it to extract PROP's value."
-  (let ((next-candidate (if backward
-                            #'previous-single-char-property-change
-                          #'next-single-char-property-change))
-        (prop-value-fn (or prop-value-fn
-                            (lambda ()
-                              (get-text-property (point) prop))))
+Return the value of PROP, or nil if it is not found.  If BACKWARD
+is non-nil, search backward.  If PROP-VALUE-FN is non-nil use it
+to extract PROP's value."
+  (let ((next-candidate
+         (if backward
+             #'previous-single-char-property-change
+           #'next-single-char-property-change))
+        (prop-value-fn
+         (or prop-value-fn
+             #'(lambda ()
+                 (get-text-property (point) prop))))
         (start (point))
         (prop-value))
     (while (progn
@@ -340,8 +350,8 @@ A cross between `cl-case' and `cl-destructuring-bind'.
 The pattern syntax is:
   ((HEAD . ARGS) . BODY)
 The list of patterns is searched for a HEAD `eq' to the car of
-VALUE. If one is found, the BODY is executed with ARGS bound to the
-corresponding values in the CDR of VALUE."
+VALUE. If one is found, the BODY is executed with ARGS bound to
+the corresponding values in the CDR of VALUE."
   (declare (indent 1))
   (let ((operator (cl-gensym "op-"))
 	(operands (cl-gensym "rand-"))
@@ -350,20 +360,21 @@ corresponding values in the CDR of VALUE."
 	    (,operator (car ,tmp))
 	    (,operands (cdr ,tmp)))
        (cl-case ,operator
-	 ,@(mapcar (lambda (clause)
-                     (if (eq (car clause) t)
-                         `(t ,@(cdr clause))
-                       (cl-destructuring-bind ((op &rest rands) &rest body) clause
-                         `(,op (cl-destructuring-bind ,rands ,operands
-                                 . ,body)))))
+	 ,@(mapcar #'(lambda (clause)
+                       (if (eq (car clause) t)
+                           `(t ,@(cdr clause))
+                         (cl-destructuring-bind ((op &rest rands) &rest body) clause
+                           `(,op (cl-destructuring-bind ,rands ,operands
+                                   . ,body)))))
 		   patterns)
 	 ,@(if (eq (caar (last patterns)) t)
 	       '()
 	     `((t (error "ELISP destructure-case failed: %S" ,tmp))))))))
 
 (defun idris2-lidr-p (&optional buffer)
-  "Return t if BUFFER is a literate Idris2 file, or nil otherwise. Use the current buffer if
-BUFFER is not supplied or is nil."
+  "Return t if BUFFER is a literate Idris2 file, or nil
+otherwise. Use the current buffer if BUFFER is not supplied or is
+nil."
   (let ((file-name (buffer-file-name buffer)))
     ;; We check for nil here because idris2-lidr-p might be called on
     ;; buffers that don't have associated files, such as the REPL
@@ -379,18 +390,19 @@ BUFFER is not supplied or is nil."
     (overlay-put overlay 'help-echo help-echo)))
 
 (defun idris2-clear-file-link-overlays (&optional mode)
-  "Remove all file link overlays from the current buffer"
+  "Remove all file link overlays from the current buffer."
   (when (or (not mode) (eq major-mode mode))
     (remove-overlays (point-min) (point-max) 'idris2-file-link t)))
 
 (defun idris2-make-module-link (start end src-dir)
   "Attempt to make the region between START and END into a
 clickable link to open a module for editing, with modules located
-relative to SRC-DIR"
+relative to SRC-DIR."
   (let* ((name (buffer-substring-no-properties start end))
          (fname (split-string name "\\."))
-         (basename (concat (mapconcat 'file-name-as-directory (cons src-dir (butlast fname)) "")
-                           (car (last fname))))
+         (basename
+          (concat (mapconcat 'file-name-as-directory (cons src-dir (butlast fname)) "")
+                  (car (last fname))))
          (idr (concat basename ".idr"))
          (lidr (concat basename ".lidr")))
     (cl-flet ((make-link (src-name)
