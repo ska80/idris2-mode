@@ -3,18 +3,15 @@
 
 EMACS = emacs
 
-BATCHEMACS = $(EMACS) --batch --no-site-file -q                                  \
-        -eval '(add-to-list (quote load-path) "${PWD}/")'                        \
-        -eval '(require (quote package))'                                        \
-        -eval '(add-to-list (quote package-archives)                             \
-                            (quote ("melpa" . "http://melpa.org/packages/")) t)' \
+BATCHEMACS = $(EMACS) --batch --no-site-file -q \
+        -eval '(add-to-list (quote load-path) "${PWD}/")' \
+        -eval '(require (quote package))' \
+        -eval '(add-to-list (quote package-archives) (quote ("melpa" . "http://melpa.org/packages/")) t)' \
         -eval '(package-initialize)'
 
-BYTECOMP = $(BATCHEMACS)                               \
-        -eval '(progn                                  \
-                 (require (quote bytecomp))            \
-                 (setq byte-compile-warnings t)        \
-                 (setq byte-compile-error-on-warn t))' \
+BYTECOMP = $(BATCHEMACS) \
+        -eval '(require (quote bytecomp))' \
+        -eval '(setq byte-compile-warnings t byte-compile-error-on-warn t)' \
         -f batch-byte-compile
 
 OBJS =  idris2-commands.elc        \
@@ -48,11 +45,9 @@ OBJS =  idris2-commands.elc        \
 build: getdeps $(OBJS)
 
 getdeps:
-	$(BATCHEMACS)                                            \
-	-eval '(progn                                            \
-	         (package-refresh-contents)                      \
-	         (unless (package-installed-p (quote prop-menu)) \
-	           (package-install (quote prop-menu))))'
+	$(BATCHEMACS) \
+	-eval '(package-refresh-contents)' \
+    -eval '(unless (package-installed-p (quote prop-menu)) (package-install (quote prop-menu)))'
 
 .PHONY: docs
 
