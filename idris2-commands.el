@@ -388,7 +388,6 @@ compiler-annotated output. Does not return a line number."
     ;; default Ctl-t)
     (if full-path
 	(idris2-goto-source-location-full full-path (+ 1 line) col is-same-window)
-      (debug)
       (user-error "Source not found for %s" file)
       )
     )
