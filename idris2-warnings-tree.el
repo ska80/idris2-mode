@@ -59,7 +59,7 @@
 
 	  ;;hack to print first error
 	  (let ((note (car notes)))
-	    (idris2-show-source-location (format "%s.idr" (nth 0 note))
+	    (idris2-show-source-location (idris2-package-to-file (nth 0 note))
 					 (nth 1 note)
 					 (nth 2 note)))
 	  notes)))))
@@ -72,7 +72,7 @@
          (button-text `(,(format "%s line %s col %s:" (nth 0 note) (nth 1 note) (nth 2 note))
                         help-echo "go to source location"
                         action ,#'(lambda (_)
-                                    (idris2-show-source-location (format "%s.idr" (nth 0 note))
+                                    (idris2-show-source-location (idris2-package-to-file (nth 0 note))
                                                                 (nth 1 note)
                                                                 (nth 2 note))))))
     (make-idris2-tree :item (nth 3 note)
@@ -125,7 +125,7 @@ Invokes `idris2-compiler-notes-mode-hook'."
     (cond ((not (idris2-tree-leaf-p tree))
            (idris2-tree-toggle tree))
           (t
-           (idris2-show-source-location (nth 0 note) (nth 1 note) (nth 2 note))))))
+           (idris2-show-source-location (idris2-package-to-file (nth 0 note)) (nth 1 note) (nth 2 note))))))
 
 (defun idris2-show-source-location (filename lineno col &optional is-same-window)
   (idris2-goto-source-location filename lineno col is-same-window))

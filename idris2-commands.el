@@ -380,14 +380,15 @@ compiler-annotated output. Does not return a line number."
 
 (defun idris2-jump-to-location (loc is-same-window)
   "jumps to specified location"
-  (pcase-let* ((`(,name ,file ,line ,col) loc)
-	       (full-path (idris2-find-full-path file)))
+  (pcase-let* ((`(,name ,package ,line ,col) loc)
+	       (full-path (idris2-find-full-path (idris2-package-to-file package))))
     (xref-push-marker-stack) ;; this pushes a "tag" mark. haskell mode
     ;; also does this and it seems appropriate, allows the user to pop
     ;; the tag and go back to the previous point. (pop-tag-mark
     ;; default Ctl-t)
     (if full-path
 	(idris2-goto-source-location-full full-path (+ 1 line) col is-same-window)
+      (debug)
       (user-error "Source not found for %s" file)
       )
     )

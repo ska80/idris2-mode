@@ -383,6 +383,16 @@ BUFFER is not supplied or is nil."
   (when (or (not mode) (eq major-mode mode))
     (remove-overlays (point-min) (point-max) 'idris2-file-link t)))
 
+(defun idris2-package-to-file (name)
+  "Converts a package name, like 'Prelude.Types' to a filename, like 'Prelude/Types.idr'"
+  (let* ((fname (split-string name "\\."))
+         (basename (concat (mapconcat 'file-name-as-directory (butlast fname) "") ;
+                           (car (last fname))))
+         (idr (concat basename ".idr")))
+    idr)
+  )
+	 
+
 (defun idris2-make-module-link (start end src-dir)
   "Attempt to make the region between START and END into a
 clickable link to open a module for editing, with modules located
