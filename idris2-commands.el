@@ -243,7 +243,8 @@ A prefix argument forces loading but only up to the current line."
                (idris2-list-compiler-notes)
                (if idris2-stay-in-current-window-on-compiler-error
                  (display-buffer (idris2-buffer-name :notes))
-                 (pop-to-buffer (idris2-buffer-name :notes))))))))
+                 (pop-to-buffer (idris2-buffer-name :notes)))
+	       )))))
     (error "Cannot find file for current buffer")))
 
 (defun idris2-view-compiler-log ()
@@ -379,8 +380,8 @@ compiler-annotated output. Does not return a line number."
 
 (defun idris2-jump-to-location (loc is-same-window)
   "jumps to specified location"
-  (pcase-let* ((`(,name ,file ,line ,col) loc)
-	       (full-path (idris2-find-full-path file)))
+  (pcase-let* ((`(,name ,package ,line ,col) loc)
+	       (full-path (idris2-find-full-path (idris2-package-to-file package))))
     (xref-push-marker-stack) ;; this pushes a "tag" mark. haskell mode
     ;; also does this and it seems appropriate, allows the user to pop
     ;; the tag and go back to the previous point. (pop-tag-mark
@@ -790,7 +791,6 @@ KILLFLAG is set if N was explicitly specified."
     (when (car what)
       (save-excursion (idris2-load-file-sync))
       (let* ((type-decl (car (idris2-eval `(:make-lemma ,(cadr what) ,(car what))))))
-	(message "type-decl is %s" type-decl)
 
 	;; (let ((lem-app (cadr (assoc :replace-metavariable (cdr result))))
 	;;       (type-decl (cadr (assoc :definition-type (cdr result)))))
@@ -811,7 +811,6 @@ KILLFLAG is set if N was explicitly specified."
 	(let ((indentation (match-string 1)) end-point)
 	  (when (not (idris2-lidr-p))
 	    (re-search-backward "^\\s-*\n")) ;; to skip any comment before the definition, we find the preceding blank line
-	  (message "ind is '%s'" indentation)
 	  (newline 1)
 	  (beginning-of-line)
 	  (insert indentation)
