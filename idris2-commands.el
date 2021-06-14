@@ -213,7 +213,7 @@ line."
                (srcdir (car dir-and-fn)))
           (setq idris2-currently-loaded-buffer nil)
           (idris2-switch-working-directory srcdir)
-          (idris2-delete-ibc t) ;; delete the ibc to avoid interfering with partial loads
+          (idris2-delete-ibc t) ; delete the ibc to avoid interfering with partial loads
           (idris2-eval-async
            (if idris2-load-to-here
                `(:load-file ,fn ,(save-excursion
@@ -238,7 +238,6 @@ line."
                                                           props))))))
                  (_ (idris2-make-clean)
                     (idris2-update-options-cache)
-
                     (setq idris2-currently-loaded-buffer (current-buffer))
                     (when (member 'warnings-tree idris2-warnings-printing)
                       (idris2-list-compiler-notes))
@@ -393,7 +392,7 @@ idris2-source-locations for given file and returns first match."
 (defun idris2-jump-to-location (loc is-same-window)
   "Jumps to specified location."
   (pcase-let* ((`(,name ,file ,line ,col) loc)
-	       (full-path (idris2-find-full-path file)))
+	       (full-path file))
     (ignore name)
     (xref-push-marker-stack) ;; this pushes a "tag" mark. haskell mode
     ;; also does this and it seems appropriate, allows the user to pop
@@ -413,8 +412,8 @@ idris2-source-locations for given file and returns first match."
       (erase-buffer)
       (dolist (loc (reverse locs))
 	(pcase-let* ((`(,name ,file ,line ,col) loc)
-		     (fullpath (idris2-find-full-path file)))
-          (ignore line col)
+		     (fullpath file))
+	  (ignore line col)
 	  (if (file-exists-p fullpath)
 	      (insert-button name 'follow-link t 'button loc
 			     'action #'(lambda (_)
@@ -805,9 +804,7 @@ expression. Otherwise, case split as a pattern variable."
   (let ((what (idris2-thing-at-point)))
     (when (car what)
       (save-excursion (idris2-load-file-sync))
-      (let* ((type-decl
-              (car (idris2-eval `(:make-lemma ,(cadr what) ,(car what))))))
-	(message "type-decl is %s" type-decl)
+      (let* ((type-decl (car (idris2-eval `(:make-lemma ,(cadr what) ,(car what))))))
 	;; (let ((lem-app (cadr (assoc :replace-metavariable (cdr result))))
 	;;       (type-decl (cadr (assoc :definition-type (cdr result)))))
 	;; replace the hole
@@ -829,7 +826,6 @@ expression. Otherwise, case split as a pattern variable."
 	(let ((indentation (match-string 1)) end-point)
 	  (when (not (idris2-lidr-p))
 	    (re-search-backward "^\\s-*\n")) ;; to skip any comment before the definition, we find the preceding blank line
-	  (message "ind is '%s'" indentation)
 	  (newline 1)
 	  (beginning-of-line)
 	  (insert indentation)

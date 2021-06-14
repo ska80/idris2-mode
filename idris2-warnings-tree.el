@@ -39,32 +39,38 @@
 (defun idris2-list-compiler-notes ()
   "Show the compiler notes in tree view."
   (interactive)
-  (with-temp-message "Preparing compiler note tree..."
-    (let ((notes (reverse idris2-raw-warnings))
-          (buffer (get-buffer-create idris2-notes-buffer-name)))
-      (with-current-buffer buffer
-        (idris2-compiler-notes-mode)
-        (setq buffer-read-only nil)
-        (erase-buffer)
-        (unless (null notes)
-          (let ((root (idris2-compiler-notes-to-tree notes)))
-            (idris2-tree-insert root "")
-            (insert "\n")
-            (message "Press q to close, return or mouse on error to navigate to source")
-            (setq buffer-read-only t)
-            (goto-char (point-min))
-            notes
-            (display-buffer (idris2-buffer-name :notes))))))))
+  (let ((notes (reverse idris2-raw-warnings))
+	(buffer (get-buffer-create idris2-notes-buffer-name)))
+    (with-current-buffer buffer
+      (idris2-compiler-notes-mode)
+      (setq buffer-read-only nil)
+      (erase-buffer)
+      (if (null notes)
+	  nil
+	(let ((root (idris2-compiler-notes-to-tree notes)))
+	  (idris2-tree-insert root "")
+	  (insert "\n")
+	  (message "Press 'q' to close, return or mouse on error to navigate to source.")
+	  (setq buffer-read-only t)
+	  (goto-char (point-min))
+	  (let ((firstkid (car (idris2-tree.kids root))))
+	    (goto-char (+ (idris2-tree.start-mark firstkid) 3)))
+	  ;; hack to print first error
+	  (let ((note (car notes)))
+	    (idris2-show-source-location (idris2-package-to-file (nth 0 note))
+					 (nth 1 note)
+					 (nth 2 note)))
+	  notes)))))
 
 (defvar idris2-tree-printer 'idris2-tree-default-printer)
 
 (defun idris2-tree-for-note (note)
-  (let* ((buttonp (> (length (nth 0 note)) 0)) ;; if empty source location
+  (let* ((buttonp (> (length (nth 0 note)) 0)) ; if empty source location
          (button-text
           `(,(format "%s line %s col %s:" (nth 0 note) (nth 1 note) (nth 2 note))
             help-echo "go to source location"
             action ,#'(lambda (_)
-                        (idris2-show-source-location (nth 0 note)
+                        (idris2-show-source-location (idris2-package-to-file (nth 0 note))
                                                      (nth 1 note)
                                                      (nth 2 note))))))
     (make-idris2-tree :item (nth 3 note)
@@ -117,7 +123,8 @@ Invokes `idris2-compiler-notes-mode-hook'."
     (cond ((not (idris2-tree-leaf-p tree))
            (idris2-tree-toggle tree))
           (t
-           (idris2-show-source-location (nth 0 note) (nth 1 note) (nth 2 note))))))
+           (idris2-show-source-location
+            (idris2-package-to-file (nth 0 note)) (nth 1 note) (nth 2 note))))))
 
 (defun idris2-show-source-location (filename lineno col &optional is-same-window)
   (idris2-goto-source-location filename lineno col is-same-window))

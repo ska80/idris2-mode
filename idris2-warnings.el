@@ -82,12 +82,13 @@ endcolumn) message &optional highlighting-spans) As of
 20140807 (Idris2 0.9.14.1-git:abee538) (endline endcolumn) is
 mostly the same as (startline startcolumn)
 "
-  (cl-destructuring-bind (filename sl1 sl2 message spans) warning
-    (let ((startline (nth 0 sl1))
+  (cl-destructuring-bind (packagename sl1 sl2 message spans) warning
+    (let ((filename (idris2-package-to-file packagename))
+	  (startline (nth 0 sl1))
           (startcol (1- (nth 1 sl1)))
           (endline (nth 0 sl2))
           (endcol (1- (nth 1 sl2))))
-      (push (list filename startline startcol message spans) idris2-raw-warnings)
+      (push (list packagename startline startcol message spans) idris2-raw-warnings)
       (let* ((fullpath (concat (file-name-as-directory idris2-process-current-working-directory)
                                filename))
              (buffer (get-file-buffer fullpath)))
