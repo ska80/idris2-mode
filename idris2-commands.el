@@ -381,7 +381,8 @@ compiler-annotated output. Does not return a line number."
 (defun idris2-jump-to-location (loc is-same-window)
   "jumps to specified location"
   (pcase-let* ((`(,name ,package ,line ,col) loc)
-	       (full-path (idris2-find-full-path (idris2-package-to-file package))))
+	       (file (idris2-package-to-file package))
+	       (full-path (idris2-find-full-path file)))
     (xref-push-marker-stack) ;; this pushes a "tag" mark. haskell mode
     ;; also does this and it seems appropriate, allows the user to pop
     ;; the tag and go back to the previous point. (pop-tag-mark
@@ -402,7 +403,8 @@ compiler-annotated output. Does not return a line number."
     (let ((inhibit-read-only t))
       (erase-buffer)
       (dolist (loc (reverse locs))
-	(pcase-let* ((`(,name ,file ,line ,col) loc)
+	(pcase-let* ((`(,name ,package ,line ,col) loc)
+		     (file (idris2-package-to-file package))
 		     (fullpath (idris2-find-full-path file))
 		     )
 	  (if (file-exists-p fullpath)
