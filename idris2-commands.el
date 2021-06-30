@@ -405,7 +405,7 @@ compiler-annotated output. Does not return a line number."
 	(pcase-let* ((`(,name ,file ,line ,col) loc)
 		     (fullpath (idris2-find-full-path file))
 		     )
-	  (if (file-exists-p fullpath)
+	  (if fullpath
 	      (insert-button name 'follow-link t 'button loc
 			     'action #'(lambda (_) (idris2-info-quit) (idris2-jump-to-location loc is-same-window)))
 	    (insert (format "%s (not found)" name)))
