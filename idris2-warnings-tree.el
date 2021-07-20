@@ -57,7 +57,7 @@
 	    (goto-char (+ (idris2-tree.start-mark firstkid) 3)))
 	  ;; hack to print first error
 	  (let ((note (car notes)))
-	    (idris2-show-source-location (idris2-package-to-file (nth 0 note))
+	    (idris2-show-source-location (nth 0 note)
 					 (nth 1 note)
 					 (nth 2 note)))
 	  notes)))))
@@ -74,12 +74,12 @@
                                                      (nth 1 note)
                                                      (nth 2 note))))))
     (make-idris2-tree :item (nth 3 note)
-                     :highlighting (if (> (length note) 4) (nth 4 note) '())
-                     :button (if buttonp button-text nil)
-                     :after-button (if buttonp "\n" nil)
-                     :plist (list 'note note)
-                     :print-fn idris2-tree-printer
-                     :preserve-properties '(idris2-tt-term))))
+                      :highlighting (if (> (length note) 4) (nth 4 note) '())
+                      :button (if buttonp button-text nil)
+                      :after-button (if buttonp "\n" nil)
+                      :plist (list 'note note)
+                      :print-fn idris2-tree-printer
+                      :preserve-properties '(idris2-tt-term))))
 
 (defun idris2-compiler-notes-to-tree (notes)
   (make-idris2-tree :item (format "Errors (%d)" (length notes))
@@ -147,26 +147,27 @@ inferior idris2 process."
 be a full path. Otherwise works just like
 IDRIS2-GOTO-SOURCE-LOCATION."
   (let ((buf (idris2-goto-location fullpath)))
-    (set-buffer buf)
-    (pop-to-buffer buf (if is-same-window '(display-buffer-same-window) t))
-    (pcase-let* ((old-start (point-min)) ; The start and end taking
-                 (old-end (point-max))   ; narrowing into account
-                 (`(,new-location . ,widen-p)
-                  (save-excursion
-                    (save-restriction
-                      (widen)
-                      (goto-char (point-min))
-                      (let* ((start (line-beginning-position lineno))
-                             (location (goto-char (+ start col))))
-                        ;; If the location is invisible, offer to make it visible
-                        (if (or (< location old-start) (> location old-end))
-                            (if (y-or-n-p "Location is not visible. Widen? ")
-                                (cons location t)
-                              (cons nil nil))
-                          (cons location nil)))))))
-      (when new-location
-        (when widen-p (widen))
-        (goto-char new-location)))))
+    (unless (null buf)
+      (set-buffer buf)
+      (pop-to-buffer buf (if is-same-window '(display-buffer-same-window) t))
+      (pcase-let* ((old-start (point-min)) ; the start and end taking
+		   (old-end (point-max))   ; narrowing into account
+		   (`(,new-location . ,widen-p)
+		    (save-excursion
+		      (save-restriction
+			(widen)
+			(goto-char (point-min))
+			(let* ((start (line-beginning-position lineno))
+			       (location (goto-char (+ start col))))
+			  ;; if the location is invisible, offer to make it visible
+			  (if (or (< location old-start) (> location old-end))
+			      (if (y-or-n-p "Location is not visible. Widen? ")
+				  (cons location t)
+				(cons nil nil))
+			    (cons location nil)))))))
+	(when new-location
+	  (when widen-p (widen))
+	  (goto-char new-location))))))
 
 (defun idris2-goto-source-location (filename lineno col is-same-window)
   "Move to the source location FILENAME LINENO COL. If the buffer

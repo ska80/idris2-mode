@@ -398,7 +398,7 @@ nil."
   "Converts a package name, like 'Prelude.Types' to a filename, like 'Prelude/Types.idr'."
   (let* ((fname (split-string name "\\."))
          (basename (concat
-                    (mapconcat #'file-name-as-directory (butlast fname) "") ;
+                    (mapconcat #'file-name-as-directory (butlast fname) "")
                     (car (last fname))))
          (idr (concat basename ".idr")))
     idr))

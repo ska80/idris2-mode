@@ -192,7 +192,8 @@ line."
   (when (and set-line (= set-line 16))
     (idris2-no-load-to))
   (if (buffer-file-name)
-      (when (idris2-current-buffer-dirty-p)
+      (if (not (idris2-current-buffer-dirty-p))
+          (message "Not typechecking since buffer hasn't been modified.")
         (when idris2-prover-currently-proving
           (if (y-or-n-p (format "%s is open in the prover.  Abandon and load? "
                                 idris2-prover-currently-proving))
@@ -214,6 +215,7 @@ line."
           (setq idris2-currently-loaded-buffer nil)
           (idris2-switch-working-directory srcdir)
           (idris2-delete-ibc t) ; delete the ibc to avoid interfering with partial loads
+          (message "Typechecking...")
           (idris2-eval-async
            (if idris2-load-to-here
                `(:load-file ,fn ,(save-excursion
@@ -327,13 +329,13 @@ one."
   "Return the name at point, or nil otherwise. Use this in Idris2
 source buffers."
    (if (equal (syntax-after (point))
-	      (string-to-syntax ".")) ;; TODO 3 probably this should be replaced with idris2 operator characters
+        (string-to-syntax ".")) ; TODO: 3 probably this should be replaced with idris2 operator characters
        ;; We're on an operator.
        (save-excursion
-	 (skip-syntax-backward ".")
-	 (let ((beg (point)))
-	   (skip-syntax-forward ".")
-	   (buffer-substring-no-properties beg (point))))
+   (skip-syntax-backward ".")
+   (let ((beg (point)))
+     (skip-syntax-forward ".")
+     (buffer-substring-no-properties beg (point))))
      ;; Try if we're on a symbol or fail otherwise.
      (current-word t)))
 
@@ -364,23 +366,6 @@ compiler-annotated output. Does not return a line number."
         (car (idris2-thing-at-point))
 	;; (car ref))))
 	)
-
-(defun idris2-find-full-path (file)
-  "Searches through idris2-process-current-working-directory and
-idris2-source-locations for given file and returns first match."
-  (let* ((file-dirs
-          (cons idris2-process-current-working-directory idris2-source-locations))
-	 (poss-full-filenames
-          (mapcar #'(lambda (d)
-                      (concat (file-name-as-directory d) file))
-                  file-dirs))
-	 (act-full-filenames
-          (seq-filter #'file-exists-p poss-full-filenames)))
-    (unless (null act-full-filenames)
-      (if (not (null (cdr act-full-filenames)))
-	  (message "Multiple locations found for file '%s': %s" file act-full-filenames)
-        ())
-      (car act-full-filenames))))
 
 (defun idris2-info-for-name (what name)
   "Display the type for a name."
@@ -413,8 +398,8 @@ idris2-source-locations for given file and returns first match."
       (dolist (loc (reverse locs))
 	(pcase-let* ((`(,name ,file ,line ,col) loc)
 		     (fullpath file))
-	  (ignore line col)
-	  (if (file-exists-p fullpath)
+          (ignore line col)
+	  (if fullpath
 	      (insert-button name 'follow-link t 'button loc
 			     'action #'(lambda (_)
                                          (idris2-info-quit)
@@ -427,9 +412,9 @@ idris2-source-locations for given file and returns first match."
   (let ((res
          (car (idris2-eval (cons :name-at (cons name ()))))))
     (if (null res)
-	(user-error "symbol '%s' not found" name)
-      (if (null (cdr res)) ;; only one choice
-	  (idris2-jump-to-location (car res) is-same-window)
+        (user-error "symbol '%s' not found" name)
+      (if (null (cdr res)) ; only one choice
+          (idris2-jump-to-location (car res) is-same-window)
 	(idris2-show-jump-choices res is-same-window)))))
 
 (defun idris2-jump-to-def (&optional is-same-window)
@@ -472,13 +457,15 @@ otherwise."
           (string-match "\\([^ ]+\\) \\(?:implementation \\)?at \\([^:]+\\):\\([0-9]+\\):\\([0-9]+\\)--[0-9]+:[0-9]+$" str)))
     (unless (null index)
       (let ((n (match-string 1 str))
-	    (fn (match-string 2 str))
-	    (ln (string-to-number (match-string 3 str)))
-	    (col (- (string-to-number (match-string 4 str)) 1)))
-        ;; For some reason, ex. for col 0, Idris returns 0 as the column when
-        ;; using ':name-at' and 1 when printing to the user, so we subtract 1
-        ;; to be consistent internally
-	(list n fn ln col)))))
+            (fn (match-string 2 str))
+            (ln (string-to-number (match-string 3 str)))
+            (col (- (string-to-number (match-string 4 str)) 1))) ; for some reason, ex. for col 0,
+                                                                 ; Idris returns 0 as the column
+                                                                 ; when using ':name-at' and 1 when
+                                                                 ; printing to the user, so we
+                                                                 ; subtract 1 to be consistent
+                                                                 ; internally
+          (list n fn ln col)))))
 
 (defun idris2-who-calls-name-helper (collapse name-str children)
   (make-idris2-tree
@@ -804,35 +791,35 @@ expression. Otherwise, case split as a pattern variable."
   (let ((what (idris2-thing-at-point)))
     (when (car what)
       (save-excursion (idris2-load-file-sync))
-      (let* ((type-decl (car (idris2-eval `(:make-lemma ,(cadr what) ,(car what))))))
-	;; (let ((lem-app (cadr (assoc :replace-metavariable (cdr result))))
-	;;       (type-decl (cadr (assoc :definition-type (cdr result)))))
-	;; replace the hole
-	;; assume point is on the hole right now!
-	(while (not (looking-at "\\?[a-zA-Z0-9?_]+"))
-	  (backward-char 1))
-
-	;; now we're on the ? - delete that character, that is the name of our
-	;; lemma
-	(delete-char 1)
-
-	;; now we add the type signature - search upwards for the first blank
-	;; line and get the indentation of the line after it. Then insert
-	;; before it, respecting indentation
-        (re-search-backward (if (idris2-lidr-p)
-				"^\\(>\\s-*\\)\\(([^)]+)\\|\\w+\\)\\s-*:"
-                              "^\\(\\s-*\\)\\(([^)]+)\\|\\w+\\)\\s-*:"))
-
-	(let ((indentation (match-string 1)) end-point)
-	  (when (not (idris2-lidr-p))
-	    (re-search-backward "^\\s-*\n")) ;; to skip any comment before the definition, we find the preceding blank line
-	  (newline 1)
-	  (beginning-of-line)
-	  (insert indentation)
-	  (insert type-decl)
-	  (setq end-point (point)) ;; we want the point ready to type the definition of the lemma
-	  (newline 1)
-	  (goto-char end-point))))))
+      (let* ((result (car (idris2-eval `(:make-lemma ,(cadr what) ,(car what)))))
+             (lemma-type (car result)))
+        ;; there are two cases here: either a ?hole, or the {name} of a provisional defn.
+        (cond ((equal lemma-type :metavariable-lemma)
+               (let ((lem-app (cadr (assoc :replace-metavariable (cdr result))))
+                     (type-decl (cadr (assoc :definition-type (cdr result)))))
+                 ;; replace the hole.  Assume point is on the hole right now!
+                 (while (not (looking-at "\\?[a-zA-Z0-9?_]+"))
+                   (backward-char 1))
+                 ;; now we're on the ? - we just matched the metavar
+                 (replace-match lem-app)
+                 ;; now we add the type signature - search upwards for the current signature, then
+                 ;; insert before it
+                 (re-search-backward
+                  (if (idris2-lidr-p)
+                      "^\\(>\\s-*\\)\\(([^)]+)\\|\\w+\\)\\s-*:"
+                    "^\\(\\s-*\\)\\(([^)]+)\\|\\w+\\)\\s-*:"))
+                 (let ((indentation (match-string 1)) end-point)
+                   (beginning-of-line)
+                   (insert indentation)
+                   (setq end-point (point))
+                   (insert type-decl)
+                   (newline 2)
+                   ;; make sure point ends up ready to start a new pattern match
+                   (goto-char end-point))))
+              ((equal lemma-type :provisional-definition-lemma)
+               (message
+"idris2-make-lemma: recieved an unsupported \
+'provisional-definition-lemma' response. Ignored.")))))))
 
 (defun idris2-compile-and-execute ()
   "Execute the program in the current buffer."
@@ -965,7 +952,10 @@ means to not ask for confirmation."
   (let* ((fname (buffer-file-name))
          (ibc (concat (file-name-sans-extension fname) ".ibc")))
     (if (not (or (string= (file-name-extension fname) "idr")
-                 (string= (file-name-extension fname) "lidr")))
+                 (string= (file-name-extension fname) "lidr")
+                 (string= (file-name-extension fname) "org")
+                 (string= (file-name-extension fname) "markdown")
+                 (string= (file-name-extension fname) "md")))
         (error "The current file is not an Idris2 file.")
       (when (or no-confirmation
                 (y-or-n-p (concat "Really delete " ibc "?")))
