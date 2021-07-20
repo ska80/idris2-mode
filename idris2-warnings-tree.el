@@ -59,7 +59,7 @@
 
 	  ;;hack to print first error
 	  (let ((note (car notes)))
-	    (idris2-show-source-location (idris2-package-to-file (nth 0 note))
+	    (idris2-show-source-location (nth 0 note)
 					 (nth 1 note)
 					 (nth 2 note)))
 	  notes)))))
@@ -148,26 +148,28 @@ Invokes `idris2-compiler-notes-mode-hook'."
 be a full path. Otherwise works just like
 idris2-goto-source-location"
   (let ((buf (idris2-goto-location fullpath)))
-    (set-buffer buf)
-    (pop-to-buffer buf (if is-same-window '(display-buffer-same-window) t))
-    (pcase-let* ((old-start (point-min)) ; The start and end taking
-                 (old-end (point-max))   ; narrowing into account
-                 (`(,new-location . ,widen-p)
-                  (save-excursion
-                    (save-restriction
-                      (widen)
-                      (goto-char (point-min))
-                      (let* ((start (line-beginning-position lineno))
-                             (location (goto-char (+ start col))))
-                        ;; If the location is invisible, offer to make it visible
-                        (if (or (< location old-start) (> location old-end))
-                            (if (y-or-n-p "Location is not visible. Widen? ")
-                                (cons location t)
-                              (cons nil nil))
-                          (cons location nil)))))))
-      (when new-location
-        (when widen-p (widen))
-        (goto-char new-location)))))
+    (unless (null buf)
+      (set-buffer buf)
+      (pop-to-buffer buf (if is-same-window '(display-buffer-same-window) t))
+      (pcase-let* ((old-start (point-min)) ; The start and end taking
+		   (old-end (point-max))   ; narrowing into account
+		   (`(,new-location . ,widen-p)
+		    (save-excursion
+		      (save-restriction
+			(widen)
+			(goto-char (point-min))
+			(let* ((start (line-beginning-position lineno))
+			       (location (goto-char (+ start col))))
+			  ;; If the location is invisible, offer to make it visible
+			  (if (or (< location old-start) (> location old-end))
+			      (if (y-or-n-p "Location is not visible. Widen? ")
+				  (cons location t)
+				(cons nil nil))
+			    (cons location nil)))))))
+	(when new-location
+	  (when widen-p (widen))
+	  (goto-char new-location)))))
+  )
 
 (defun idris2-goto-source-location (filename lineno col is-same-window)
   "Move to the source location FILENAME LINENO COL. If the buffer

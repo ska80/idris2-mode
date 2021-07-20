@@ -187,7 +187,7 @@ A prefix argument forces loading but only up to the current line."
     (idris2-make-dirty))
   (when (and set-line (= set-line 16)) (idris2-no-load-to))
   (if (buffer-file-name)
-      (when (idris2-current-buffer-dirty-p)
+      (if (not (idris2-current-buffer-dirty-p)) (message "Not typechecking since buffer hasn't been modified.")
         (when idris2-prover-currently-proving
           (if (y-or-n-p (format "%s is open in the prover. Abandon and load? "
                                 idris2-prover-currently-proving))
@@ -208,6 +208,7 @@ A prefix argument forces loading but only up to the current line."
           (setq idris2-currently-loaded-buffer nil)
           (idris2-switch-working-directory srcdir)
           (idris2-delete-ibc t) ;; delete the ibc to avoid interfering with partial loads
+          (message "Typechecking...")
           (idris2-eval-async
            (if idris2-load-to-here
                `(:load-file ,fn ,(save-excursion
@@ -358,15 +359,17 @@ compiler-annotated output. Does not return a line number."
 
 (defun idris2-find-full-path (file)
   "Searches through idris2-process-current-working-directory and idris2-source-locations for given file and returns first match."
-  (let* ((file-dirs (cons idris2-process-current-working-directory idris2-source-locations))
-	 (poss-full-filenames (mapcar #'(lambda (d) (concat (file-name-as-directory d) file)) file-dirs))
-	 (act-full-filenames (seq-filter #'file-exists-p poss-full-filenames))
-	 )
-    (if (null act-full-filenames) nil
-      (progn
-       (if (not (null (cdr act-full-filenames)))
-	   (message "Multiple locations found for file '%s': %s" file act-full-filenames) ())
-       (car act-full-filenames)))
+  (if (file-exists-p file) file
+    (let* ((file-dirs (cons idris2-process-current-working-directory idris2-source-locations))
+	   (poss-full-filenames (mapcar #'(lambda (d) (concat (file-name-as-directory d) file)) file-dirs))
+	   (act-full-filenames (seq-filter #'file-exists-p poss-full-filenames))
+	   )
+      (if (null act-full-filenames) nil
+	(progn
+	  (if (not (null (cdr act-full-filenames)))
+	      (message "Multiple locations found for file '%s': %s" file act-full-filenames) ())
+	  (car act-full-filenames)))
+      )
     )
   )
 
@@ -405,7 +408,7 @@ compiler-annotated output. Does not return a line number."
 	(pcase-let* ((`(,name ,file ,line ,col) loc)
 		     (fullpath file)
 		     )
-	  (if (file-exists-p fullpath)
+	  (if fullpath
 	      (insert-button name 'follow-link t 'button loc
 			     'action #'(lambda (_) (idris2-info-quit) (idris2-jump-to-location loc is-same-window)))
 	    (insert (format "%s (not found)" name)))
